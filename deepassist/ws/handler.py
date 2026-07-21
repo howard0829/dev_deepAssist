@@ -79,6 +79,19 @@ class WSHandler:
                     await bridge.send(MT.FETCH_VLLM_MODELS_RESULT, {
                         "id": payload.get("id", ""), "models": models, "error": error})
 
+                elif mtype == MT.TEST_LLM_CONNECTION:
+                    # 설정 패널 연결 테스트 — 서버 망에서 프로바이더 엔드포인트 검증.
+                    from ..llm import test_llm_connection
+                    ok, message = await test_llm_connection(
+                        provider=payload.get("provider", ""),
+                        vllm_url=payload.get("vllm_url", ""),
+                        openai_base_url=payload.get("openai_base_url", ""),
+                        api_key=payload.get("api_key", ""),
+                        model=payload.get("model", ""),
+                    )
+                    await bridge.send(MT.TEST_LLM_CONNECTION_RESULT, {
+                        "id": payload.get("id", ""), "ok": ok, "message": message})
+
                 elif mtype == MT.WORKSPACE_METADATA:
                     session.workspace_meta = payload
 

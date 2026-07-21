@@ -23,16 +23,15 @@ def _bool(name: str, default: bool) -> bool:
 # ── 포트/호스트 ──
 DEEPASSIST_HOST = os.getenv("DEEPASSIST_HOST", "0.0.0.0")
 DEEPASSIST_PORT = int(os.getenv("DEEPASSIST_PORT", "8000"))
-LITELLM_HOST = os.getenv("LITELLM_HOST", "127.0.0.1")
-LITELLM_PORT = int(os.getenv("LITELLM_PORT", "4000"))
 # vLLM은 외부에서 서빙 중. 모델명은 /v1/models로 읽어 사용(dev_agent_client 방식).
 VLLM_BASE_URL = os.getenv("VLLM_BASE_URL", "http://localhost:8080").rstrip("/")
 
-# ── LLM 연결 (Agent SDK → LiteLLM, Anthropic 포맷) ──
-ANTHROPIC_BASE_URL = os.getenv("ANTHROPIC_BASE_URL", "").strip() \
-    or f"http://{LITELLM_HOST}:{LITELLM_PORT}"
-ANTHROPIC_AUTH_TOKEN = os.getenv("ANTHROPIC_AUTH_TOKEN", "").strip() \
-    or os.getenv("LITELLM_MASTER_KEY", "sk-deepassist-local")
+# ── 외부 LiteLLM 연결 (Agent SDK → LiteLLM, Anthropic 포맷) ──
+# vLLM·LiteLLM은 이 리포 밖에서 별도 실행. ANTHROPIC_BASE_URL 로 외부 LiteLLM 에 접속.
+ANTHROPIC_BASE_URL = os.getenv("ANTHROPIC_BASE_URL", "").strip() or "http://127.0.0.1:4000"
+# 외부 LiteLLM이 master_key를 쓰지 않으면 비어있지 않은 아무 토큰이면 된다.
+ANTHROPIC_AUTH_TOKEN = os.getenv("ANTHROPIC_AUTH_TOKEN", "").strip() or "not-needed"
+# Agent SDK가 요청할 모델명 = 외부 LiteLLM의 model_name 과 반드시 일치해야 한다.
 DEEPASSIST_MODEL = os.getenv("DEEPASSIST_MODEL", "deepassist")
 
 # ── 에이전트 동작 ──

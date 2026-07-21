@@ -126,16 +126,10 @@
                 "gtas.llmProvider": {
                     "type": "string",
                     "enum": [
-                        "Ollama",
                         "vLLM",
                         "OpenAI"
                     ],
-                    "default": "Ollama"
-                },
-                "gtas.ollamaUrl": {
-                    "type": "string",
-                    "default": "",
-                    "description": "Ollama Base URL. 비워두면 서버 .env(OLLAMA_BASE_URL)에 위임 — 단일 출처 권장."
+                    "default": "vLLM"
                 },
                 "gtas.vllmUrl": {
                     "type": "string",

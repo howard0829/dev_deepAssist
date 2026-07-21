@@ -13,14 +13,12 @@
 
     // 기본 프로바이더 메타. 서버 session_init.config에서 덮어씀.
     let providers = [
-        { id: 'Ollama', visible: true, enabled: true,
-            default_url: 'http://localhost:11434', models: [], default_model: 'gemma3:27b' },
         { id: 'vLLM', visible: true, enabled: true,
             default_url: 'http://localhost:8080', default_model: '' },
         { id: 'OpenAI', visible: true, enabled: true,
             default_url: 'https://api.openai.com/v1', default_model: 'gpt-4o-mini' },
     ];
-    let currentProvider = 'Ollama';
+    let currentProvider = 'vLLM';
     let currentConfig = {};
 
     // ── Extension → Webview ──
@@ -76,7 +74,11 @@
             || providerDefault('OpenAI', 'default_url', 'https://api.openai.com/v1');
         $('api-key').value = currentConfig.apiKey || '';
         $('model-input').value = currentConfig.model || '';
-        currentProvider = currentConfig.llmProvider || 'Ollama';
+        currentProvider = currentConfig.llmProvider || 'vLLM';
+        // 이전에 저장된 provider(예: 삭제된 Ollama)가 목록에 없으면 첫 프로바이더로 보정.
+        if (!providers.some((p) => p.id === currentProvider && p.visible !== false)) {
+            currentProvider = (providers.find((p) => p.visible !== false) || {}).id || 'vLLM';
+        }
         renderProviderRadios();
         onProviderChange(currentProvider);
     }

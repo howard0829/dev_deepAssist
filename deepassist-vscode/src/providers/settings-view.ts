@@ -27,15 +27,6 @@ interface ProviderMeta {
 
 const DEFAULT_PROVIDERS: ProviderMeta[] = [
     {
-        id: 'Ollama',
-        visible: true,
-        enabled: true,
-        // base_url·model은 서버 .env 단일 출처 — 클라 하드코딩 기본값 제거(빈값).
-        // 실제 값은 session_init.providers(서버 LLM_PROVIDERS)로 hydrate.
-        default_url: '',
-        default_model: '',
-    },
-    {
         id: 'vLLM',
         visible: true,
         enabled: true,
@@ -118,7 +109,7 @@ export class SettingsViewProvider implements vscode.WebviewViewProvider {
             payload: {
                 config: {
                     serverUrl: cfg.get<string>('serverUrl', ''),
-                    llmProvider: cfg.get<string>('llmProvider', 'Ollama'),
+                    llmProvider: cfg.get<string>('llmProvider', 'vLLM'),
                     ollamaUrl: cfg.get<string>('ollamaUrl', ''),
                     vllmUrl: cfg.get<string>('vllmUrl', ''),
                     openaiBaseUrl: cfg.get<string>('openaiBaseUrl', 'https://api.openai.com/v1'),
