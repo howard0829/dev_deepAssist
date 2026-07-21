@@ -1,0 +1,485 @@
+<title>DeepAssist 아키텍처</title>
+<style>
+  :root{
+    --bg:#F5F7FA; --surface:#FFFFFF; --surface-2:#EEF2F6; --border:#D5DEE6;
+    --text:#18222E; --muted:#5C6B7A; --faint:#8593A1;
+    --accent:#2E7D95; --accent-strong:#1F6480; --accent-2:#B27C22;
+    --delegate:#2E7D95; --delegate-bg:#E4F0F4;
+    --server:#3E7A54; --server-bg:#E7F1E9;
+    --off:#9AA6B2; --off-bg:#ECEFF2;
+    --paper:#F3F6F8; --paper-line:#DAE3EA; --paper-ink:#16202B;
+    --code-bg:#EEF2F6;
+    --shadow:0 1px 2px rgba(20,32,46,.05),0 6px 20px -12px rgba(20,32,46,.18);
+    --font-sans:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans KR","Apple SD Gothic Neo",sans-serif;
+    --font-mono:ui-monospace,SFMono-Regular,"JetBrains Mono",Menlo,Consolas,monospace;
+    --maxw:1080px; --prose:70ch;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#0E141C; --surface:#141C26; --surface-2:#1A2531; --border:#273443;
+      --text:#E4EAF1; --muted:#9FB0BF; --faint:#728394;
+      --accent:#57B0CB; --accent-strong:#7CC4DA; --accent-2:#D8A54A;
+      --delegate:#57B0CB; --delegate-bg:#12303B;
+      --server:#68B584; --server-bg:#153026;
+      --off:#5E6E7C; --off-bg:#1B2530;
+      --code-bg:#101821;
+      --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px -14px rgba(0,0,0,.6);
+    }
+  }
+  :root[data-theme="light"]{
+    --bg:#F5F7FA; --surface:#FFFFFF; --surface-2:#EEF2F6; --border:#D5DEE6;
+    --text:#18222E; --muted:#5C6B7A; --faint:#8593A1;
+    --accent:#2E7D95; --accent-strong:#1F6480; --accent-2:#B27C22;
+    --delegate:#2E7D95; --delegate-bg:#E4F0F4;
+    --server:#3E7A54; --server-bg:#E7F1E9;
+    --off:#9AA6B2; --off-bg:#ECEFF2; --code-bg:#EEF2F6;
+  }
+  :root[data-theme="dark"]{
+    --bg:#0E141C; --surface:#141C26; --surface-2:#1A2531; --border:#273443;
+    --text:#E4EAF1; --muted:#9FB0BF; --faint:#728394;
+    --accent:#57B0CB; --accent-strong:#7CC4DA; --accent-2:#D8A54A;
+    --delegate:#57B0CB; --delegate-bg:#12303B;
+    --server:#68B584; --server-bg:#153026;
+    --off:#5E6E7C; --off-bg:#1B2530; --code-bg:#101821;
+  }
+
+  *{box-sizing:border-box}
+  body{background:var(--bg);color:var(--text);font-family:var(--font-sans);
+    line-height:1.6;-webkit-font-smoothing:antialiased;margin:0}
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:clamp(1.2rem,4vw,3rem) clamp(1rem,4vw,2.4rem)}
+  a{color:var(--accent);text-underline-offset:2px}
+  ::selection{background:var(--accent);color:var(--surface)}
+
+  /* header */
+  header.masthead{border-bottom:1px solid var(--border);padding-bottom:1.6rem;margin-bottom:2.4rem}
+  .kick{font-family:var(--font-mono);font-size:.72rem;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);font-weight:600}
+  h1{font-size:clamp(1.9rem,4.4vw,2.9rem);line-height:1.08;margin:.5rem 0 .4rem;letter-spacing:-.01em;text-wrap:balance;font-weight:700}
+  .lede{color:var(--muted);max-width:60ch;font-size:1.02rem;margin:0}
+  .meta{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:1.1rem}
+  .tag{font-family:var(--font-mono);font-size:.72rem;letter-spacing:.03em;padding:.28rem .6rem;border:1px solid var(--border);border-radius:999px;color:var(--muted);background:var(--surface)}
+  .tag b{color:var(--text);font-weight:600}
+
+  /* toc */
+  nav.toc{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:1rem 1.2rem;margin-bottom:2.6rem;box-shadow:var(--shadow)}
+  nav.toc .kick{margin-bottom:.6rem;display:block}
+  nav.toc ol{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:.35rem .9rem}
+  nav.toc li{font-size:.9rem}
+  nav.toc a{display:flex;gap:.55rem;text-decoration:none;color:var(--text);padding:.2rem 0}
+  nav.toc a:hover{color:var(--accent)}
+  nav.toc .n{font-family:var(--font-mono);color:var(--faint);font-size:.78rem;min-width:1.4em}
+
+  section{margin:0 0 3rem;scroll-margin-top:1.2rem}
+  section>.kick{display:block;margin-bottom:.35rem}
+  h2{font-size:clamp(1.3rem,2.6vw,1.7rem);margin:.1rem 0 1rem;letter-spacing:-.01em;font-weight:700;text-wrap:balance}
+  h3{font-size:1.02rem;margin:1.4rem 0 .5rem;font-weight:650}
+  p{max-width:var(--prose)}
+  .muted{color:var(--muted)}
+  strong{font-weight:650}
+  code{font-family:var(--font-mono);font-size:.86em;background:var(--code-bg);border:1px solid var(--border);border-radius:5px;padding:.06em .38em}
+
+  /* diagram panel — consistent drafting paper in both themes */
+  .diagram{background:var(--paper);
+    background-image:linear-gradient(var(--paper-line) 1px,transparent 1px),linear-gradient(90deg,var(--paper-line) 1px,transparent 1px);
+    background-size:22px 22px;background-position:-1px -1px;
+    border:1px solid var(--border);border-radius:14px;padding:1.1rem;margin:1.2rem 0;
+    overflow-x:auto;box-shadow:var(--shadow)}
+  .diagram pre.mermaid{margin:0;text-align:center;min-width:520px}
+  .cap{font-family:var(--font-mono);font-size:.72rem;letter-spacing:.04em;color:var(--faint);text-transform:uppercase;margin:.2rem 0 0}
+
+  /* tables */
+  .tablewrap{overflow-x:auto;border:1px solid var(--border);border-radius:12px;margin:1.1rem 0;box-shadow:var(--shadow)}
+  table{border-collapse:collapse;width:100%;font-size:.9rem;background:var(--surface);min-width:520px}
+  th,td{text-align:left;padding:.65rem .85rem;border-bottom:1px solid var(--border);vertical-align:top}
+  thead th{background:var(--surface-2);font-family:var(--font-mono);font-size:.72rem;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:600;white-space:nowrap}
+  tbody tr:last-child td{border-bottom:none}
+  td code{white-space:nowrap}
+
+  /* chips */
+  .chip{display:inline-flex;align-items:center;gap:.35rem;font-family:var(--font-mono);font-size:.72rem;letter-spacing:.02em;padding:.16rem .5rem;border-radius:999px;font-weight:600;white-space:nowrap;border:1px solid transparent}
+  .chip::before{content:"";width:.5rem;height:.5rem;border-radius:50%;background:currentColor;opacity:.9}
+  .chip.delegate{color:var(--delegate);background:var(--delegate-bg);border-color:color-mix(in srgb,var(--delegate) 30%,transparent)}
+  .chip.server{color:var(--server);background:var(--server-bg);border-color:color-mix(in srgb,var(--server) 30%,transparent)}
+  .chip.off{color:var(--off);background:var(--off-bg);border-color:color-mix(in srgb,var(--off) 34%,transparent)}
+  .chip.keep{color:var(--server);background:var(--server-bg);border-color:color-mix(in srgb,var(--server) 30%,transparent)}
+  .chip.drop{color:var(--accent-2);background:color-mix(in srgb,var(--accent-2) 14%,transparent);border-color:color-mix(in srgb,var(--accent-2) 32%,transparent)}
+  .chip.new{color:var(--accent);background:var(--delegate-bg);border-color:color-mix(in srgb,var(--accent) 30%,transparent)}
+
+  /* component cards */
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:1rem;margin:1.2rem 0}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:1.1rem 1.15rem;box-shadow:var(--shadow)}
+  .card .lbl{font-family:var(--font-mono);font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);font-weight:600}
+  .card h3{margin:.35rem 0 .5rem;font-size:1.05rem}
+  .card p{font-size:.88rem;color:var(--muted);margin:0}
+  .card ul{margin:.5rem 0 0;padding-left:1.05rem;font-size:.86rem;color:var(--muted)}
+  .card li{margin:.2rem 0}
+
+  /* stepper */
+  .steps{list-style:none;counter-reset:s;margin:1.2rem 0;padding:0;display:grid;gap:.7rem}
+  .steps li{counter-increment:s;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:.85rem 1rem .85rem 3.2rem;position:relative;box-shadow:var(--shadow);font-size:.92rem}
+  .steps li::before{content:counter(s,decimal-leading-zero);position:absolute;left:1rem;top:.85rem;font-family:var(--font-mono);font-size:.82rem;font-weight:700;color:var(--accent);border:1px solid color-mix(in srgb,var(--accent) 40%,transparent);border-radius:7px;width:1.7rem;height:1.7rem;display:grid;place-items:center;background:var(--delegate-bg)}
+  .steps b{font-weight:650}
+  .steps .sub{display:block;color:var(--muted);font-size:.84rem;margin-top:.2rem}
+
+  /* callouts */
+  .callout{border:1px solid var(--border);border-left:3px solid var(--accent);background:var(--surface);border-radius:0 12px 12px 0;padding:.9rem 1.1rem;margin:1rem 0;box-shadow:var(--shadow)}
+  .callout.warn{border-left-color:var(--accent-2)}
+  .callout .ct{font-family:var(--font-mono);font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 .3rem}
+  .callout.warn .ct{color:var(--accent-2)}
+  .callout p{margin:0;font-size:.9rem;color:var(--text)}
+
+  /* code block */
+  pre.code{background:var(--code-bg);border:1px solid var(--border);border-radius:12px;padding:1rem 1.1rem;overflow-x:auto;font-family:var(--font-mono);font-size:.82rem;line-height:1.55;margin:1.1rem 0;box-shadow:var(--shadow)}
+  pre.code .c{color:var(--faint)}
+  pre.code .k{color:var(--accent-2)}
+  pre.code .s{color:var(--accent)}
+
+  ul.plain{padding-left:1.15rem}
+  ul.plain li{margin:.3rem 0;max-width:var(--prose)}
+
+  footer{border-top:1px solid var(--border);margin-top:2rem;padding-top:1.3rem;color:var(--faint);font-size:.82rem;font-family:var(--font-mono)}
+
+  a.anchor{color:inherit;text-decoration:none}
+  a.anchor:hover{color:var(--accent)}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:4px}
+  @media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+</style>
+
+<div class="wrap">
+
+  <header class="masthead">
+    <span class="kick">System Design · Draft</span>
+    <h1>DeepAssist 아키텍처</h1>
+    <p class="lede">VSCode UI 기반 AI 코딩 에이전트/오케스트레이터. 기존 G-TAS의 UI·위임 구조는 재활용하고, 자체 엔진을 <strong>Claude Agent SDK</strong>로 교체한다. LLM은 원격 <strong>LiteLLM</strong> 프록시를 거쳐 <strong>vLLM·OpenAI</strong>로 연결한다.</p>
+    <div class="meta">
+      <span class="tag"><b>Core</b> · Claude Agent SDK (Python)</span>
+      <span class="tag"><b>Client</b> · VSCode 확장 (TS)</span>
+      <span class="tag"><b>Proxy</b> · LiteLLM → vLLM · OpenAI</span>
+      <span class="tag"><b>Topology</b> · 원격 서버 + 도구 위임</span>
+    </div>
+  </header>
+
+  <nav class="toc" aria-label="목차">
+    <span class="kick">Contents</span>
+    <ol>
+      <li><a href="#s1"><span class="n">01</span> 개요와 목표</a></li>
+      <li><a href="#s2"><span class="n">02</span> 핵심 설계 결정</a></li>
+      <li><a href="#s3"><span class="n">03</span> 시스템 아키텍처</a></li>
+      <li><a href="#s4"><span class="n">04</span> 구성요소</a></li>
+      <li><a href="#s5"><span class="n">05</span> 도구 아키텍처 · 위임</a></li>
+      <li><a href="#s6"><span class="n">06</span> 요청 라이프사이클</a></li>
+      <li><a href="#s7"><span class="n">07</span> 이벤트 ↔ 프로토콜 매핑</a></li>
+      <li><a href="#s8"><span class="n">08</span> query() 옵션 구성</a></li>
+      <li><a href="#s9"><span class="n">09</span> 충돌 처리</a></li>
+      <li><a href="#s10"><span class="n">10</span> 재사용 vs 폐기</a></li>
+      <li><a href="#s11"><span class="n">11</span> 검증 · 리스크</a></li>
+      <li><a href="#s12"><span class="n">12</span> 미결정</a></li>
+    </ol>
+  </nav>
+
+  <!-- 01 -->
+  <section id="s1">
+    <span class="kick">01 · Overview</span>
+    <h2><a href="#s1" class="anchor">개요와 목표</a></h2>
+    <p>DeepAssist는 "Claude Agent SDK의 <code>query()</code> 옵션을 조립하고, 워크스페이스 도구 위임 브리지를 운영하는 서버측 오케스트레이션 계층"이다. 에이전트 루프 자체는 구현하지 않는다.</p>
+    <ul class="plain">
+      <li><strong>Orchestrator = DeepAssist</strong> — MCP 서버·RAG·skills를 관리해 core agent에 넘긴다.</li>
+      <li><strong>Core agent = Claude Agent SDK</strong>(Python). 서버에 상주.</li>
+      <li><strong>UI = 기존 VSCode 확장 그대로</strong> — 기존 WebSocket 위임 프로토콜 유지.</li>
+      <li><strong>LLM = LiteLLM 프록시 → vLLM·OpenAI</strong> — 원격 공유 서버 상주.</li>
+      <li><strong>범위</strong> — 파일/셸만 위임한다. <strong>LSP는 제외.</strong></li>
+    </ul>
+  </section>
+
+  <!-- 02 -->
+  <section id="s2">
+    <span class="kick">02 · Decisions</span>
+    <h2><a href="#s2" class="anchor">핵심 설계 결정</a></h2>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>항목</th><th>결정</th><th>근거</th></tr></thead>
+        <tbody>
+          <tr><td>실행 토폴로지</td><td><strong>원격 공유 서버</strong>에 Agent SDK 상주, 워크스페이스 도구만 클라 위임</td><td>SDK가 통제된 서버 환경에서 도는 게 설계 의도. 확장 host subprocess 구동 리스크 회피</td></tr>
+          <tr><td>언어</td><td>서버 <strong>Python</strong> / 클라 <strong>TypeScript</strong></td><td>기존 Python RAG·MCP 자산 및 TS 확장 재활용</td></tr>
+          <tr><td>UI 재사용 범위</td><td><strong>기존 위임 프로토콜 그대로 유지</strong></td><td>위임 토폴로지와 정합. <code>protocol.py</code> + <code>tool-executor.ts</code> 재사용</td></tr>
+          <tr><td>워크스페이스 도구</td><td>내장 Bash/Read/Write/Edit/Glob/Grep <strong>비활성화</strong> → 위임형 MCP 도구로 대체</td><td>훅으로는 "다른 곳에서 실행" 불가(내장이 서버에서 먼저 실행됨)</td></tr>
+          <tr><td>LLM 연결</td><td><code>ANTHROPIC_BASE_URL</code> → LiteLLM <code>/v1/messages</code></td><td>Agent SDK 표준 커스텀 엔드포인트 방식</td></tr>
+          <tr><td>LSP</td><td>제외</td><td>범위 축소</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 03 -->
+  <section id="s3">
+    <span class="kick">03 · Topology</span>
+    <h2><a href="#s3" class="anchor">시스템 아키텍처</a></h2>
+    <p>세 계층 — 클라이언트(VSCode 확장), 원격 서버(DeepAssist + Agent SDK), LLM 백엔드. 워크스페이스를 건드리는 도구만 서버에서 클라로 위임되고, RAG 등은 서버에서 직접 실행된다.</p>
+    <div class="diagram">
+      <pre class="mermaid">
+%%{init:{'theme':'base','themeVariables':{'fontFamily':'ui-monospace,Menlo,monospace','fontSize':'12px','primaryColor':'#EAF1F5','primaryBorderColor':'#2E7D95','primaryTextColor':'#16202B','lineColor':'#67788A','clusterBkg':'#FBFCFD','clusterBorder':'#C6D2DC'}}}%%
+flowchart TB
+  subgraph CLIENT["클라이언트 · VSCode 확장 (TypeScript)"]
+    direction TB
+    UI["webview UI<br/>chat · settings"]
+    WS["ws-client"]
+    TE["tool-executor<br/>파일 · Bash native 실행"]
+  end
+  subgraph SERVER["원격 공유 서버 (Python)"]
+    direction TB
+    H["ws handler · bridge · session_pool"]
+    DA["DeepAssist 오케스트레이터<br/>query() 옵션 조립"]
+    SDK["Claude Agent SDK<br/>에이전트 루프"]
+    MD["위임형 MCP 도구<br/>bash·read·write·edit·glob·grep"]
+    MS["서버직접 MCP 도구<br/>RAG · knowledge"]
+  end
+  subgraph LLM["LLM 백엔드"]
+    direction TB
+    LT["LiteLLM 프록시<br/>/v1/messages"]
+    VP["vLLM · OpenAI"]
+  end
+  UI --- WS
+  WS <== WebSocket ==> H
+  H --> DA
+  DA -- "query(prompt, options)" --> SDK
+  DA --> MD
+  DA --> MS
+  SDK -- "도구 호출" --> MD
+  SDK -- "도구 호출" --> MS
+  MD -- "tool_request" --> H
+  H -- "tool_request" --> TE
+  TE -. "tool_result" .-> MD
+  SDK -- "ANTHROPIC_BASE_URL" --> LT
+  LT --> VP
+  classDef delegate fill:#E4F0F4,stroke:#2E7D95,color:#16202B;
+  classDef server fill:#E7F1E9,stroke:#3E7A54,color:#16202B;
+  class MD delegate;
+  class MS server;
+      </pre>
+    </div>
+    <p class="cap">Fig. 1 — 계층 구조 및 도구 위임 경로 (파랑=위임 · 초록=서버직접)</p>
+  </section>
+
+  <!-- 04 -->
+  <section id="s4">
+    <span class="kick">04 · Components</span>
+    <h2><a href="#s4" class="anchor">구성요소</a></h2>
+    <div class="cards">
+      <div class="card">
+        <span class="lbl">Client · TS</span>
+        <h3>VSCode 확장</h3>
+        <p>대부분 재사용. 서버 메시지가 Agent SDK 이벤트 기반으로 바뀌므로 표시 계층 매핑만 조정.</p>
+        <ul>
+          <li>webview UI(chat · settings)</li>
+          <li>ws-client — 기존 프로토콜</li>
+          <li>tool-executor — 파일·Bash native 실행, dangerous 체크, 변경전 캐시, 되돌리기</li>
+        </ul>
+      </div>
+      <div class="card">
+        <span class="lbl">Server · Python</span>
+        <h3>DeepAssist 오케스트레이터</h3>
+        <p>이 프로젝트의 핵심 신규 계층.</p>
+        <ul>
+          <li>세션별 <code>ClaudeAgentOptions</code> 조립</li>
+          <li>위임형 MCP 도구를 세션 bridge에 바인딩</li>
+          <li>서버직접 MCP(RAG) 등록</li>
+          <li>skills · subagents · system prompt · permission 주입</li>
+          <li>SDK 메시지 → UI 프로토콜 번역</li>
+        </ul>
+      </div>
+      <div class="card">
+        <span class="lbl">Server · Python</span>
+        <h3>Claude Agent SDK</h3>
+        <p>에이전트 루프·컨텍스트 관리·도구 호출. 서버 프로세스에서 구동. <code>ANTHROPIC_BASE_URL</code>을 로컬 LiteLLM으로 지정.</p>
+      </div>
+      <div class="card">
+        <span class="lbl">Server · reuse</span>
+        <h3>RAG · MCP</h3>
+        <p>기존 <code>g_tas_server/rag·mcp</code> 자산을 서버직접 MCP 도구로 래핑해 재활용. 무거운 인덱싱은 서버 유지.</p>
+      </div>
+      <div class="card">
+        <span class="lbl">LLM Backend</span>
+        <h3>LiteLLM → vLLM · OpenAI</h3>
+        <p>Anthropic 포맷 <code>/v1/messages</code>를 수신해 vLLM/OpenAI로 변환. <code>cache_control·thinking·count_tokens</code> 처리 필요(§11).</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 05 -->
+  <section id="s5">
+    <span class="kick">05 · Tooling</span>
+    <h2><a href="#s5" class="anchor">도구 아키텍처 · 위임</a></h2>
+    <p>기존 G-TAS의 <code>execute=callable(서버직접) / None(클라위임)</code> 구도를 계승한다. 모든 도구를 SDK MCP 도구로 정의하되, handler 내부에서 위임 여부가 갈린다.</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>분류</th><th>도구</th><th>실행 위치</th><th>구현</th></tr></thead>
+        <tbody>
+          <tr><td><span class="chip delegate">클라 위임</span></td><td>bash · read · write · edit · glob · grep</td><td>클라 워크스페이스</td><td>handler가 <code>bridge.request_and_wait</code>로 위임</td></tr>
+          <tr><td><span class="chip server">서버 직접</span></td><td>RAG/knowledge 검색 · scratch · 거대파일 변환 · ask_user</td><td>서버</td><td>handler가 서버 리소스 직접 호출</td></tr>
+          <tr><td><span class="chip off">비활성화</span></td><td>SDK 내장 Bash/Read/Write/Edit/Glob/Grep</td><td>—</td><td><code>disallowed_tools</code>로 제거 (서버 FS 오염 방지)</td></tr>
+          <tr><td><span class="chip off">제외</span></td><td>LSP 계열</td><td>—</td><td>이번 범위 밖</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>위임 메커니즘</h3>
+    <p>내장 도구는 서버 FS에서 실행되므로 반드시 <strong>끄고</strong>, 동일 책임의 위임형 MCP 도구로 대체한다. 훅(PreToolUse/PostToolUse)은 내장 도구가 서버에서 먼저 실행되는 문제로 위임 용도에 부적합.</p>
+    <div class="diagram">
+      <pre class="mermaid">
+%%{init:{'theme':'base','themeVariables':{'fontFamily':'ui-monospace,Menlo,monospace','fontSize':'12px','primaryColor':'#EAF1F5','primaryBorderColor':'#2E7D95','primaryTextColor':'#16202B','lineColor':'#67788A','actorBkg':'#E4F0F4','actorBorder':'#2E7D95','actorTextColor':'#16202B','signalColor':'#4A5B6C','signalTextColor':'#16202B','noteBkgColor':'#F3ECDD','noteBorderColor':'#B27C22','noteTextColor':'#3A2E14'}}}%%
+sequenceDiagram
+  participant M as 모델 (Agent SDK)
+  participant Hd as 위임 MCP handler
+  participant Br as bridge (세션)
+  participant Cl as VSCode tool-executor
+  M->>Hd: mcp__deepassist__bash(command)
+  Hd->>Br: ToolRequest(id,"bash",args)
+  Br->>Cl: tool_request (WebSocket)
+  Cl->>Cl: 워크스페이스에서 native 실행
+  Cl-->>Br: tool_result(output, side_effects)
+  Br-->>Hd: ToolResult
+  Hd-->>M: content 반환 → 루프 계속
+  Note over Cl,Br: 장시간 도구는 tool_progress heartbeat로 timeout 연장
+      </pre>
+    </div>
+    <p class="cap">Fig. 2 — 위임형 도구 호출 왕복 (handler가 세션 bridge를 클로저로 캡처)</p>
+  </section>
+
+  <!-- 06 -->
+  <section id="s6">
+    <span class="kick">06 · Lifecycle</span>
+    <h2><a href="#s6" class="anchor">요청 라이프사이클</a></h2>
+    <ol class="steps">
+      <li><b>사용자 프롬프트</b><span class="sub">클라 → 서버 : <code>user_message</code>(prompt, workspace, provider_config …)</span></li>
+      <li><b>세션 준비</b><span class="sub">DeepAssist가 <code>ClaudeAgentOptions</code> 조립 — 위임 MCP + RAG MCP + skills + system_prompt</span></li>
+      <li><b>에이전트 실행</b><span class="sub"><code>for msg in query(prompt, options)</code> — StreamEvent→<code>agent_text</code>, tool_use→<code>tool_call_update</code>, 위임 도구는 <code>tool_request↔tool_result</code> 왕복, 파일수정→<code>modified_file_diff</code>, 위험작업→<code>approval_request</code></span></li>
+      <li><b>완료</b><span class="sub">ResultMessage → <code>agent_complete</code>(response, modified_files, diffs, metrics)</span></li>
+    </ol>
+  </section>
+
+  <!-- 07 -->
+  <section id="s7">
+    <span class="kick">07 · Protocol</span>
+    <h2><a href="#s7" class="anchor">이벤트 ↔ 프로토콜 매핑</a></h2>
+    <p>기존 <code>shared/protocol.py</code>를 유지하고, DeepAssist가 아래처럼 번역한다.</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Agent SDK (yield / callback)</th><th>UI 프로토콜 메시지</th><th>비고</th></tr></thead>
+        <tbody>
+          <tr><td>StreamEvent · text_delta</td><td><code>agent_text</code></td><td><code>include_partial_messages=True</code></td></tr>
+          <tr><td>AssistantMessage · tool_use</td><td><code>tool_call_update</code> / <code>status_update</code></td><td>표시용</td></tr>
+          <tr><td>위임 MCP handler 내부</td><td><code>tool_request</code> → <code>tool_result</code></td><td>실제 위임 왕복</td></tr>
+          <tr><td>파일 수정(side_effects)</td><td><code>modified_file_diff</code></td><td>도구 결과 직후 즉시</td></tr>
+          <tr><td>canUseTool 콜백(위험 작업)</td><td><code>approval_request</code> ↔ <code>approval_response</code></td><td>승인 게이트</td></tr>
+          <tr><td>ask_user 도구</td><td><code>clarification_request</code> ↔ <code>clarification_response</code></td><td>서버직접 도구</td></tr>
+          <tr><td>SystemMessage(init)</td><td><code>session_init</code> 보강</td><td>도구·MCP 상태</td></tr>
+          <tr><td>ResultMessage</td><td><code>agent_complete</code></td><td>최종 응답·수정파일·메트릭</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 08 -->
+  <section id="s8">
+    <span class="kick">08 · Options</span>
+    <h2><a href="#s8" class="anchor">query() 옵션 구성</a></h2>
+<pre class="code"><span class="k">options</span> = ClaudeAgentOptions(
+    model=provider_config.model,                 <span class="c"># per-query 모델</span>
+    system_prompt={                              <span class="c"># 프리셋 + 위임 도구 지침 (§9.1)</span>
+        <span class="s">"type"</span>: <span class="s">"preset"</span>, <span class="s">"preset"</span>: <span class="s">"claude_code"</span>,
+        <span class="s">"append"</span>: DEEPASSIST_TOOL_GUIDE,
+    },
+    disallowed_tools=[                           <span class="c"># 내장 워크스페이스 도구 제거</span>
+        <span class="s">"Bash"</span>,<span class="s">"Read"</span>,<span class="s">"Write"</span>,<span class="s">"Edit"</span>,<span class="s">"Glob"</span>,<span class="s">"Grep"</span>,
+    ],
+    mcp_servers={                                <span class="c"># 위임형 + 서버직접</span>
+        <span class="s">"deepassist"</span>: create_sdk_mcp_server(
+            name=<span class="s">"deepassist"</span>,
+            tools=[bash_tool, read_tool, write_tool,
+                   edit_tool, glob_tool, grep_tool],  <span class="c"># handler가 bridge 위임</span>
+        ),
+        <span class="s">"knowledge"</span>: create_sdk_mcp_server(
+            name=<span class="s">"knowledge"</span>, tools=[rag_search, ...],  <span class="c"># 서버직접</span>
+        ),
+    },
+    allowed_tools=[<span class="s">"mcp__deepassist__bash"</span>, ...,
+                   <span class="s">"mcp__knowledge__rag_search"</span>],  <span class="c"># 사전 승인</span>
+    permission_mode=<span class="s">"default"</span>,                   <span class="c"># canUseTool 승인 게이트</span>
+    agents={...},                                <span class="c"># subagents (선택)</span>
+    skills=<span class="s">"all"</span>,                              <span class="c"># skills 로드</span>
+    include_partial_messages=<span class="k">True</span>,             <span class="c"># 스트리밍 UI</span>
+    cwd=workspace_label,                         <span class="c"># 명목상(실 실행은 클라)</span>
+    env={<span class="s">"ANTHROPIC_BASE_URL"</span>: litellm_url,
+         <span class="s">"ANTHROPIC_AUTH_TOKEN"</span>: token},
+)</pre>
+    <p class="muted"><code>bash_tool</code> 등은 <code>@tool</code>로 정의하고, handler가 세션 bridge를 캡처해 <code>tool_request</code>를 위임한다.</p>
+  </section>
+
+  <!-- 09 -->
+  <section id="s9">
+    <span class="kick">09 · Conflicts</span>
+    <h2><a href="#s9" class="anchor">충돌 처리</a></h2>
+    <div class="callout warn">
+      <p class="ct">9.1 · 도구 이름 · 시스템 프롬프트 정합성 — 유일한 튜닝 지점</p>
+      <p>MCP 도구는 항상 <code>mcp__&lt;server&gt;__&lt;name&gt;</code> 프리픽스라 이름이 <code>Bash</code>/<code>Edit</code>가 될 수 없다. <code>claude_code</code> 프리셋은 내장 도구명을 지칭하므로 어긋난다. <strong>처리:</strong> 프리셋 + <code>append</code>로 위임 도구의 이름·용도·규칙을 명시(필요 시 커스텀 프롬프트). → 구현 초기 프롬프트 스파이크 대상.</p>
+    </div>
+    <div class="callout">
+      <p class="ct">9.2 · Edit / Read 의미론 재현</p>
+      <p>내장 Edit의 "Read 후 수정, staleness 검사" 규약을 위임 도구가 스스로 일관되게 구현. 기존 클라 <code>_beforeContentCache</code>·diff·<code>user_reject_change</code> 로직 재활용.</p>
+    </div>
+    <div class="callout">
+      <p class="ct">9.3 · 지연 누적</p>
+      <p>도구 호출마다 서버↔클라 왕복. Agent SDK는 도구 호출이 잦아 지연이 쌓인다(G-TAS가 이미 감수하던 특성). 완화: <code>tool_progress</code> heartbeat, 병렬 안전 도구는 병렬 실행 검토.</p>
+    </div>
+  </section>
+
+  <!-- 10 -->
+  <section id="s10">
+    <span class="kick">10 · Reuse</span>
+    <h2><a href="#s10" class="anchor">재사용 vs 폐기</a></h2>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>영역</th><th>기존 G-TAS</th><th>상태</th></tr></thead>
+        <tbody>
+          <tr><td>webview UI</td><td><code>g-tas-vscode/webview</code></td><td><span class="chip keep">재사용</span></td></tr>
+          <tr><td>클라 도구 실행</td><td><code>tool-executor.ts</code></td><td><span class="chip keep">재사용 (LSP 제외)</span></td></tr>
+          <tr><td>WebSocket 프로토콜</td><td><code>shared/protocol.py</code></td><td><span class="chip keep">재사용</span></td></tr>
+          <tr><td>ws handler·bridge·session_pool</td><td><code>g_tas_server/ws</code></td><td><span class="chip keep">재사용</span></td></tr>
+          <tr><td>RAG · MCP</td><td><code>g_tas_server/rag·mcp</code></td><td><span class="chip keep">재사용 (MCP 래핑)</span></td></tr>
+          <tr><td>에이전트 엔진</td><td><code>deepassist_agent.py</code> · <code>pipelines/</code></td><td><span class="chip drop">폐기 → Agent SDK</span></td></tr>
+          <tr><td>도구 레지스트리</td><td><code>tools/_ALL_TOOLS</code></td><td><span class="chip new">재구성 (SDK MCP)</span></td></tr>
+          <tr><td>오케스트레이션</td><td>(에이전트 내부)</td><td><span class="chip new">신규 DeepAssist</span></td></tr>
+          <tr><td>LLM 호출</td><td><code>llm_providers.py</code></td><td><span class="chip new">LiteLLM 프록시로 대체</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 11 -->
+  <section id="s11">
+    <span class="kick">11 · Verify</span>
+    <h2><a href="#s11" class="anchor">검증 · 리스크</a></h2>
+    <ul class="plain">
+      <li><strong>LiteLLM <code>/v1/messages</code> 호환</strong> — Agent SDK가 보내는 <code>cache_control·thinking·count_tokens</code>를 vLLM/OpenAI로 정상 변환/패스스루하는지. → 최소 왕복 스파이크.</li>
+      <li><strong>위임 MCP handler ↔ bridge 연동</strong> — async handler에서 <code>bridge.request_and_wait</code> await가 세션 스코프로 정확히 매칭되는지.</li>
+      <li><strong>내장 도구 비활성화 후 도구 선택 품질</strong> — 위임형 MCP 도구만 남겼을 때 모델이 적절히 사용하는지(§9.1 프롬프트 튜닝과 함께).</li>
+      <li><strong>모델 능력</strong> — vLLM 로컬 모델의 도구 호출·장기 에이전트 스태미나(interleaved thinking 보존 등 고려).</li>
+    </ul>
+  </section>
+
+  <!-- 12 -->
+  <section id="s12">
+    <span class="kick">12 · Open</span>
+    <h2><a href="#s12" class="anchor">미결정</a></h2>
+    <ul class="plain">
+      <li>Plan Mode · 리뷰 파이프라인(<code>finding_added</code> 등) 재도입 여부.</li>
+      <li>subagents 활용 범위.</li>
+      <li>skills 레지스트리 위치(서버 디렉토리 vs 원격 배포).</li>
+      <li>멀티유저 동시성 · vLLM 큐잉 정책.</li>
+    </ul>
+  </section>
+
+  <footer>
+    DeepAssist · System Design Draft · docs/design/architecture.md 기반 · 다이어그램은 Fig.1 계층구조 / Fig.2 위임 왕복
+  </footer>
+
+</div>
