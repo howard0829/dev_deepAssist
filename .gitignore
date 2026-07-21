@@ -1,0 +1,11 @@
+# Claude Code local settings (personal, machine-specific)
+.claude/settings.local.json
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.swp
+
+# Environment
+.env
+.env.*
