@@ -11,18 +11,18 @@
 # ──────────────────────────────────────────────────────────────
 
 model_list:
-  # Agent SDK가 요청하는 기본 모델 (DEEPASSIST_MODEL=deepassist) → vLLM
+  # Agent SDK 기본 모델 (DEEPASSIST_MODEL=deepassist) → 외부 vLLM
   - model_name: deepassist
     litellm_params:
       # hosted_vllm/ 프리픽스 = OpenAI 호환 vLLM 엔드포인트
-      model: hosted_vllm/deepassist-vllm      # = VLLM_SERVED_NAME
-      api_base: http://127.0.0.1:8080/v1      # = VLLM_PORT
-      api_key: "dummy"                        # vLLM은 키 검증 안 함
+      model: hosted_vllm/minimax-m2.5
+      api_base: http://localhost:8080/v1
+      api_key: "dummy"                    # vLLM은 키 검증 안 함
 
-  # OpenAI 백엔드 (선택) — DEEPASSIST_MODEL=gpt-4o 로 전환 시 사용
-  - model_name: gpt-4o
+  # OpenAI 백엔드 (선택) — DEEPASSIST_MODEL=GLM-5.2 로 전환 시 사용
+  - model_name: GLM-5.2
     litellm_params:
-      model: openai/gpt-4o
+      model: openai/GLM-5.2
       api_key: os.environ/OPENAI_API_KEY
 
 litellm_settings:

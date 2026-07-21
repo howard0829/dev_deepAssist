@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="{{CSP}}">
+    <title>G-TAS Chat</title>
+    <link rel="stylesheet" href="{{THEME_CSS}}">
+    <link rel="stylesheet" href="{{STYLES_CSS}}">
+</head>
+<body>
+    <div class="header">
+        <div class="header-row">
+            <button class="connection-status" id="connection-status" type="button" title="">
+                <span class="status-indicator" id="status-dot"></span>
+                <span class="status-text" id="status-text">연결 끊김</span>
+            </button>
+            <div class="header-actions">
+                <button class="icon-btn" id="reset-chat-btn" title="새로고침 — 대화 내용 삭제 + 서버 세션 리셋 + 재연결">🔄</button>
+                <button class="icon-btn" id="open-settings-btn" title="설정">⚙</button>
+            </div>
+        </div>
+        <div class="app-switcher" id="app-switcher"></div>
+    </div>
+
+    <div class="collapsible-section" id="progress-section">
+        <div class="collapsible-header" data-toggle-section="progress">
+            <span class="collapsible-chevron">▼</span>
+            <span class="collapsible-title">⚙️ 진행 상태</span>
+        </div>
+        <div class="collapsible-body">
+            <div class="progress-panel" id="progress-panel"></div>
+        </div>
+    </div>
+
+    <div class="chat-messages" id="chat-messages"></div>
+
+    <div class="composer">
+        <div class="context-bar" id="context-bar" hidden>
+            <div class="context-bar-row">
+                <span class="context-bar-label">📎 컨텍스트</span>
+                <button class="icon-btn context-clear" id="context-clear-btn" title="첨부 모두 제거" hidden>비우기</button>
+            </div>
+            <div class="context-chips" id="context-chips"></div>
+        </div>
+        <textarea id="prompt-input" placeholder="메시지를 입력하세요... (Enter 전송, Shift+Enter 줄바꿈)" rows="1"></textarea>
+        <div class="composer-actions">
+            <div class="mode-toggle" role="group" aria-label="실행 모드">
+                <button class="mode-btn active" data-mode="agent" title="Coordinator 패턴으로 자율 작업 수행">🤖 Agent</button>
+                <button class="mode-btn" data-mode="chat" title="LLM과 단순 대화 (도구 없음)">💬 Chat</button>
+            </div>
+            <div class="composer-actions-right">
+                <button id="send-btn" class="send">전송</button>
+                <button id="stop-btn" class="stop">중지</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{LIB_MARKED}}"></script>
+    <script src="{{LIB_PURIFY}}"></script>
+    <script src="{{SHARED_MARKDOWN}}"></script>
+    <script src="{{PROGRESS_JS}}"></script>
+    <script src="{{DIFF_RENDERER_JS}}"></script>
+    <script src="{{MAIN_JS}}"></script>
+</body>
+</html>

@@ -25,7 +25,8 @@ DEEPASSIST_HOST = os.getenv("DEEPASSIST_HOST", "0.0.0.0")
 DEEPASSIST_PORT = int(os.getenv("DEEPASSIST_PORT", "8000"))
 LITELLM_HOST = os.getenv("LITELLM_HOST", "127.0.0.1")
 LITELLM_PORT = int(os.getenv("LITELLM_PORT", "4000"))
-VLLM_PORT = int(os.getenv("VLLM_PORT", "8080"))
+# vLLM은 외부에서 서빙 중. 모델명은 /v1/models로 읽어 사용(dev_agent_client 방식).
+VLLM_BASE_URL = os.getenv("VLLM_BASE_URL", "http://localhost:8080").rstrip("/")
 
 # ── LLM 연결 (Agent SDK → LiteLLM, Anthropic 포맷) ──
 ANTHROPIC_BASE_URL = os.getenv("ANTHROPIC_BASE_URL", "").strip() \

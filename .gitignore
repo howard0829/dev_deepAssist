@@ -16,3 +16,8 @@ Thumbs.db
 # Python
 __pycache__/
 *.pyc
+
+# VSCode 확장 빌드 산물
+deepassist-vscode/node_modules/
+deepassist-vscode/dist/
+*.vsix

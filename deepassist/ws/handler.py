@@ -72,6 +72,13 @@ class WSHandler:
                     if run_task and not run_task.done():
                         run_task.cancel()
 
+                elif mtype == MT.FETCH_VLLM_MODELS:
+                    # dev_agent_client 방식 — 서버 망에서 vLLM 서빙 모델명 조회.
+                    from ..llm import fetch_vllm_models
+                    models, error = await fetch_vllm_models(payload.get("vllm_url", ""))
+                    await bridge.send(MT.FETCH_VLLM_MODELS_RESULT, {
+                        "id": payload.get("id", ""), "models": models, "error": error})
+
                 elif mtype == MT.WORKSPACE_METADATA:
                     session.workspace_meta = payload
 

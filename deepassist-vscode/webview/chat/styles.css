@@ -1,0 +1,1106 @@
+/*
+ * 채팅 사이드바 스타일.
+ * 원본 core/styles.py의 진행 UI CSS를 VSCode 테마 변수로 포팅.
+ */
+
+body {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+}
+
+/* ── 헤더: 연결 상태 + 앱 카드 ── */
+.header {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--vscode-panel-border);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex-shrink: 0;
+}
+.header-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.connection-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    padding: 2px 6px;
+    cursor: pointer;
+    color: inherit;
+    font: inherit;
+    user-select: none;
+    transition: background 0.15s, border-color 0.15s;
+}
+.connection-status:hover {
+    background: var(--vscode-toolbar-hoverBackground);
+    border-color: var(--vscode-panel-border);
+}
+.connection-status.connected { cursor: default; }
+.connection-status.connected:hover {
+    background: transparent;
+    border-color: transparent;
+}
+.connection-status.attempting .status-indicator {
+    animation: pulseDot 1s ease-in-out infinite;
+}
+@keyframes pulseDot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.35; }
+}
+.status-indicator {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--vscode-testing-iconFailed, #f85149);
+    flex-shrink: 0;
+    display: inline-block;
+}
+.status-indicator.connected {
+    background: var(--vscode-testing-iconPassed, #3fb950);
+}
+.status-text {
+    color: var(--vscode-descriptionForeground);
+    font-size: 0.78rem;
+}
+.header-actions {
+    margin-left: auto;
+    display: flex;
+    gap: 4px;
+}
+.icon-btn {
+    background: transparent;
+    border: none;
+    color: var(--vscode-icon-foreground);
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 0.85rem;
+}
+.icon-btn:hover {
+    background: var(--vscode-toolbar-hoverBackground);
+}
+
+/* ── 실행 모드 토글 (Agent / Chat) — composer 내부 컴팩트 ── */
+.mode-toggle {
+    display: inline-flex;
+    background: var(--vscode-editor-background);
+    border: 1px solid var(--vscode-panel-border);
+    border-radius: 4px;
+    padding: 1px;
+    gap: 1px;
+}
+.mode-toggle .mode-btn {
+    background: transparent;
+    border: none;
+    color: var(--vscode-descriptionForeground);
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 0.72rem;
+    font-weight: 500;
+    transition: all 0.15s;
+    user-select: none;
+    cursor: pointer;
+}
+.mode-toggle .mode-btn:hover:not(.active) {
+    background: var(--vscode-list-hoverBackground);
+    color: var(--vscode-foreground);
+}
+.mode-toggle .mode-btn.active {
+    background: var(--vscode-list-activeSelectionBackground);
+    color: var(--vscode-list-activeSelectionForeground);
+    box-shadow: 0 0 0 1px var(--vscode-focusBorder);
+}
+
+/* ── 카드형 앱 스위처 (Sprint2 — 가로 단일 라인) ── */
+.app-switcher {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 4px;
+}
+.app-card {
+    background: var(--vscode-editor-background);
+    border: 1px solid var(--vscode-panel-border);
+    border-radius: 6px;
+    padding: 4px 8px;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+    user-select: none;
+    /* 가로 배치: 아이콘 ← → 제목. description은 툴팁으로 이동 */
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 28px;
+}
+.app-card:hover:not(.disabled) {
+    border-color: var(--vscode-focusBorder);
+}
+.app-card.active {
+    border-color: var(--vscode-focusBorder);
+    background: var(--vscode-list-activeSelectionBackground);
+    box-shadow: inset 0 0 0 1px var(--vscode-focusBorder);
+}
+.app-card.disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+.app-card-icon {
+    font-size: 1rem;
+    line-height: 1;
+    flex-shrink: 0;
+}
+.app-card-name {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--vscode-foreground);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex: 1;
+    min-width: 0;
+}
+/* description은 카드 `title` 툴팁으로 이동 — JS가 이미 주입 중. DOM은 유지하되 hidden */
+.app-card-desc {
+    display: none;
+}
+
+/* ── Progress 패널 (8 시각 기능) ── */
+.progress-panel {
+    border-bottom: 1px solid var(--vscode-panel-border);
+    padding: 8px 12px;
+    display: none;
+    flex-shrink: 0;
+    max-height: 50vh;
+    overflow-y: auto;
+}
+.progress-panel.visible { display: block; }
+
+/* Feature 1 — 에이전트 아바타 */
+.agent-avatar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 12px;
+    margin-bottom: 8px;
+    border-radius: 10px;
+    background: var(--vscode-editor-background);
+    border: 1px solid var(--vscode-panel-border);
+    animation: pulseGlow 2s ease-in-out infinite;
+    transition: all 0.3s ease;
+}
+.agent-avatar.av-done {
+    animation: none;
+    border-color: var(--vscode-testing-iconPassed, #3fb950);
+}
+.agent-avatar.av-error {
+    animation: none;
+    border-color: var(--vscode-testing-iconFailed, #f85149);
+}
+.agent-avatar .av-emoji { font-size: 1.5rem; }
+.agent-avatar .av-text {
+    color: var(--vscode-foreground);
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+.agent-avatar .av-phase {
+    color: var(--vscode-descriptionForeground);
+    font-size: 0.75rem;
+    margin-left: auto;
+}
+
+/* Feature 2 — 메트릭 카드 */
+.metrics-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+.metric-card {
+    flex: 1;
+    background: var(--vscode-editor-background);
+    border: 1px solid var(--vscode-panel-border);
+    border-radius: 8px;
+    padding: 8px 4px;
+    text-align: center;
+}
+.metric-card .m-value {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--vscode-foreground);
+}
+.metric-card .m-label {
+    font-size: 0.62rem;
+    color: var(--vscode-descriptionForeground);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 2px;
+}
+
+/* Feature 3 — 턴 프로그레스 링 */
+.progress-ring-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+}
+.progress-ring {
+    width: 52px; height: 52px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.progress-ring-inner {
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    background: var(--vscode-sideBar-background);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+}
+.pr-pct {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--vscode-textLink-foreground);
+}
+.pr-label {
+    font-size: 0.5rem;
+    color: var(--vscode-descriptionForeground);
+}
+
+/* Feature 4 — 사고 버블 */
+.thinking-bubble {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    background: var(--vscode-textCodeBlock-background);
+    border: 1px solid var(--vscode-panel-border);
+    border-radius: 16px;
+    margin: 6px 0;
+}
+.thinking-dots { display: flex; gap: 4px; }
+.thinking-dots span {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--vscode-textLink-foreground);
+    animation: bounceDot 1.2s infinite ease-in-out;
+}
+.thinking-dots span:nth-child(2) { animation-delay: 0.15s; }
+.thinking-dots span:nth-child(3) { animation-delay: 0.3s; }
+.thinking-text {
+    color: var(--vscode-descriptionForeground);
+    font-size: 0.8rem;
+    font-style: italic;
+}
+
+/* Feature 5 — 에이전트 행동 요약 */
+.agent-summary {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    background: var(--vscode-textCodeBlock-background);
+    border-left: 3px solid var(--vscode-textLink-foreground);
+    border-radius: 0 6px 6px 0;
+    padding: 6px 10px;
+    margin: 6px 0;
+    font-size: 0.78rem;
+    line-height: 1.5;
+    max-height: 100px;
+    overflow-y: auto;
+}
+.agent-summary .as-icon { font-size: 0.95rem; flex-shrink: 0; margin-top: 1px; }
+.agent-summary .as-text {
+    color: var(--vscode-foreground);
+    word-break: break-word;
+    white-space: pre-wrap;
+}
+
+/* Feature 6 — 도구 활동 타임라인 */
+.tool-timeline {
+    max-height: 200px;
+    overflow-y: auto;
+    margin-top: 6px;
+}
+.tl-entry {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 10px;
+    margin: 3px 0;
+    border-left: 3px solid var(--vscode-panel-border);
+    background: var(--vscode-editor-background);
+    border-radius: 0 6px 6px 0;
+    font-family: var(--vscode-editor-font-family, monospace);
+    font-size: 0.75rem;
+    animation: fadeSlideIn 0.3s ease-out;
+}
+.tl-entry .tl-icon { font-size: 0.95rem; flex-shrink: 0; }
+.tl-entry .tl-info {
+    flex: 1;
+    color: var(--vscode-foreground);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.tl-entry .tl-time {
+    color: var(--vscode-descriptionForeground);
+    font-size: 0.7rem;
+    flex-shrink: 0;
+}
+.tl-entry.tl-read   { border-left-color: #58a6ff; }
+.tl-entry.tl-write  { border-left-color: #3fb950; }
+.tl-entry.tl-edit   { border-left-color: #3fb950; }
+.tl-entry.tl-bash   { border-left-color: #f0883e; }
+.tl-entry.tl-grep   { border-left-color: #bc8cff; }
+.tl-entry.tl-glob   { border-left-color: #79c0ff; }
+.tl-entry.tl-search { border-left-color: #d2a8ff; }
+
+/* Feature 7 — Diff 프리뷰 */
+.diff-preview {
+    background: var(--vscode-editor-background);
+    border: 1px solid var(--vscode-panel-border);
+    border-radius: 6px;
+    padding: 8px 10px;
+    margin: 6px 0;
+    font-family: var(--vscode-editor-font-family, monospace);
+    font-size: 0.72rem;
+    max-height: 160px;
+    overflow-y: auto;
+}
+.diff-preview .diff-hdr {
+    color: var(--vscode-textLink-foreground);
+    font-weight: 600;
+    margin-bottom: 4px;
+    font-size: 0.78rem;
+}
+.diff-preview .diff-del {
+    color: var(--vscode-gitDecoration-deletedResourceForeground, #f85149);
+}
+.diff-preview .diff-add {
+    color: var(--vscode-gitDecoration-addedResourceForeground, #3fb950);
+}
+
+/* Feature 8 — 계층 Phase Progress */
+.phase-progress {
+    margin-top: 6px;
+}
+.phase-progress-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8rem;
+    color: var(--vscode-foreground);
+    margin-bottom: 4px;
+}
+.phase-progress-bar {
+    height: 4px;
+    background: var(--vscode-panel-border);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 6px;
+}
+.phase-progress-bar > div {
+    height: 100%;
+    background: var(--vscode-textLink-foreground);
+    transition: width 0.3s;
+}
+.phase-list { font-size: 0.78rem; line-height: 1.6; }
+.phase-item {
+    display: flex;
+    gap: 6px;
+    padding: 2px 0;
+}
+.phase-item .icon { flex-shrink: 0; }
+.phase-item.done .label { text-decoration: line-through; opacity: 0.7; }
+.phase-item.failed .label { color: var(--vscode-testing-iconFailed, #f85149); }
+.sub-task {
+    margin-left: 18px;
+    font-size: 0.74rem;
+    color: var(--vscode-descriptionForeground);
+}
+
+/* ── 채팅 메시지 영역 ── */
+.chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px 12px;
+}
+.message {
+    margin-bottom: 10px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    line-height: 1.5;
+}
+.message.user {
+    background: var(--vscode-input-background);
+    border: 1px solid var(--vscode-input-border, var(--vscode-panel-border));
+}
+.message.agent {
+    background: var(--vscode-editor-background);
+    border: 1px solid var(--vscode-panel-border);
+}
+.message.status {
+    font-size: 0.8rem;
+    color: var(--vscode-descriptionForeground);
+    padding: 2px 6px;
+    margin: 2px 0;
+}
+.message-content > :first-child { margin-top: 0; }
+.message-content > :last-child { margin-bottom: 0; }
+.message-content p { margin: 6px 0; }
+.message-content ul, .message-content ol {
+    padding-left: 22px;
+    margin: 6px 0;
+}
+.message-content blockquote {
+    border-left: 3px solid var(--vscode-textBlockQuote-border);
+    background: var(--vscode-textBlockQuote-background);
+    padding: 4px 10px;
+    margin: 6px 0;
+}
+.message-content table {
+    border-collapse: collapse;
+    margin: 6px 0;
+}
+.message-content th, .message-content td {
+    border: 1px solid var(--vscode-panel-border);
+    padding: 4px 8px;
+}
+
+/* 도구 호출 기록 expander */
+.tool-calls-expander {
+    margin-top: 6px;
+    border-top: 1px dashed var(--vscode-panel-border);
+    padding-top: 6px;
+}
+.tool-calls-expander summary {
+    cursor: pointer;
+    font-size: 0.8rem;
+    color: var(--vscode-descriptionForeground);
+    user-select: none;
+}
+.tool-calls-expander summary:hover { color: var(--vscode-foreground); }
+.tool-calls-list { margin-top: 4px; }
+.tool-call-record {
+    padding: 4px 0;
+    border-bottom: 1px dotted var(--vscode-panel-border);
+    font-size: 0.75rem;
+}
+.tool-call-record:last-child { border-bottom: none; }
+.tool-call-record .name {
+    font-weight: 600;
+    color: var(--vscode-textLink-foreground);
+}
+.tool-call-record pre {
+    font-size: 0.7rem;
+    margin: 3px 0;
+    padding: 4px 6px;
+}
+
+/* modified_files 카드 */
+.modified-files {
+    margin-top: 8px;
+    border-top: 1px solid var(--vscode-panel-border);
+    padding-top: 8px;
+}
+.modified-files-title {
+    font-size: 0.8rem;
+    color: var(--vscode-descriptionForeground);
+    margin-bottom: 4px;
+}
+.modified-file-card {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    background: var(--vscode-editor-background);
+    border: 1px solid var(--vscode-panel-border);
+    border-radius: 4px;
+    margin-bottom: 4px;
+    cursor: pointer;
+    font-family: var(--vscode-editor-font-family, monospace);
+    font-size: 0.78rem;
+    transition: all 0.15s;
+}
+.modified-file-card:hover {
+    background: var(--vscode-list-hoverBackground);
+    border-color: var(--vscode-focusBorder);
+}
+.modified-file-card .icon { font-size: 0.95rem; }
+.modified-file-card .path {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--vscode-foreground);
+}
+.modified-file-card .actions {
+    display: flex;
+    gap: 4px;
+}
+.modified-file-card .action-btn {
+    background: transparent;
+    border: 1px solid var(--vscode-panel-border);
+    color: var(--vscode-foreground);
+    border-radius: 3px;
+    padding: 2px 6px;
+    font-size: 0.7rem;
+}
+.modified-file-card .action-btn:hover {
+    background: var(--vscode-button-secondaryBackground);
+}
+
+/* ── 컨텍스트 바 (composer 내부 — 활성 파일 + 첨부 칩) ── */
+.context-bar {
+    padding: 0;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-height: 110px;
+    overflow-y: auto;
+}
+.context-bar[hidden] { display: none; }
+.context-bar-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.context-bar-label {
+    font-size: 0.72rem;
+    color: var(--vscode-descriptionForeground);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.context-clear {
+    margin-left: auto;
+    font-size: 0.7rem;
+    border: 1px solid var(--vscode-panel-border);
+}
+.context-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+.ctx-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--vscode-editor-background);
+    border: 1px solid var(--vscode-panel-border);
+    border-radius: 12px;
+    padding: 2px 8px;
+    font-size: 0.72rem;
+    font-family: var(--vscode-editor-font-family, monospace);
+    color: var(--vscode-foreground);
+    max-width: 100%;
+}
+.ctx-chip .ctx-icon { flex-shrink: 0; }
+.ctx-chip .ctx-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 180px;
+}
+.ctx-chip.ctx-snippet {
+    border-color: var(--vscode-symbolIcon-functionForeground, #b392f0);
+    background: var(--vscode-textCodeBlock-background, rgba(128,128,128,0.1));
+}
+.ctx-chip.ctx-snippet .ctx-name {
+    font-family: var(--vscode-editor-font-family, monospace);
+    font-size: 0.85rem;
+    max-width: 220px;
+}
+.ctx-chip-btn {
+    background: transparent;
+    border: none;
+    color: var(--vscode-icon-foreground);
+    padding: 0 2px;
+    font-size: 0.85rem;
+    line-height: 1;
+    cursor: pointer;
+}
+.ctx-chip-btn:hover { color: var(--vscode-errorForeground); }
+
+/* ── 입력 composer (컨텍스트 + textarea + 모드토글 + 전송) ── */
+.composer {
+    margin: 0 12px 12px;
+    border: 1px solid var(--vscode-input-border, var(--vscode-panel-border));
+    border-radius: 6px;
+    background: var(--vscode-input-background);
+    padding: 6px 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex-shrink: 0;
+}
+.composer:focus-within {
+    border-color: var(--vscode-focusBorder);
+}
+.composer textarea {
+    background: transparent;
+    color: var(--vscode-input-foreground);
+    border: none;
+    padding: 2px 2px;
+    resize: none;
+    font-family: inherit;
+    font-size: inherit;
+    min-height: 32px;
+    max-height: 120px;
+    outline: none;
+    width: 100%;
+    box-sizing: border-box;
+}
+.composer-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.composer-actions-right {
+    margin-left: auto;
+    display: flex;
+    gap: 4px;
+}
+.composer-actions button.send,
+.composer-actions button.stop {
+    background: var(--vscode-button-background);
+    color: var(--vscode-button-foreground);
+    border: none;
+    padding: 4px 12px;
+    border-radius: 3px;
+    font-weight: 500;
+    font-size: 0.78rem;
+    cursor: pointer;
+}
+.composer-actions button.send:hover {
+    background: var(--vscode-button-hoverBackground);
+}
+.composer-actions button.stop {
+    background: var(--vscode-inputValidation-errorBackground, #f85149);
+    color: var(--vscode-inputValidation-errorForeground, #ffffff);
+    display: none;
+}
+.composer-actions button.stop.active { display: inline-block; }
+.composer-actions button.send.hidden { display: none; }
+
+/* ── Collapsible 섹션 (progress / findings 공통) ───────────────── */
+.collapsible-section {
+    margin: 8px 0;
+    border: 1px solid var(--vscode-panel-border, rgba(128,128,128,0.3));
+    border-radius: 4px;
+    background: var(--vscode-editorWidget-background, rgba(0,0,0,0.04));
+    overflow: hidden;
+    /* 기본 hidden — 필요할 때 .visible 클래스로 표시 */
+    display: none;
+}
+.collapsible-section.visible { display: block; }
+.collapsible-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    cursor: pointer;
+    user-select: none;
+    background: var(--vscode-editorWidget-background, rgba(0,0,0,0.04));
+    border-bottom: 1px solid var(--vscode-panel-border, rgba(128,128,128,0.2));
+    flex-wrap: wrap;
+}
+.collapsible-header:hover {
+    background: var(--vscode-toolbar-hoverBackground, rgba(128,128,128,0.12));
+}
+.collapsible-chevron {
+    display: inline-block;
+    transition: transform 0.15s ease;
+    font-size: 0.8em;
+    opacity: 0.7;
+    width: 12px;
+    text-align: center;
+}
+.collapsible-section.collapsed .collapsible-chevron {
+    transform: rotate(-90deg);
+}
+.collapsible-section.collapsed .collapsible-header {
+    border-bottom-color: transparent;
+}
+.collapsible-section.collapsed .collapsible-body {
+    display: none;
+}
+.collapsible-title { flex: 1; font-weight: 600; }
+
+/* progress-section 안의 progress-panel은 wrapper 헤더로 분리됐으므로 자체 border 제거 */
+.collapsible-section .progress-panel {
+    border-bottom: none;
+    padding: 8px 12px;
+    /* 매 1초 innerHTML 재생성. visible 클래스는 wrapper와 함께 토글 (호환 유지) */
+}
+
+/* ── Phase A — 리뷰 발견사항 패널 ─────────────────────────────── */
+/* findings-panel은 collapsible-section의 body 안에 위치. 자체는 padding만 */
+/* UI 노출 비활성. 서버 finding_added 메시지·메모리 누적·LSP 자동 검증 루프는 그대로 동작. 복구: 아래 1줄만 삭제 */
+#findings-section { display: none !important; }
+.findings-panel {
+    font-size: 0.9em;
+    background: transparent;
+}
+.findings-filters {
+    display: flex;
+    gap: 4px;
+    padding: 6px 10px;
+    border-bottom: 1px solid var(--vscode-panel-border, rgba(128,128,128,0.15));
+}
+.ff-btn {
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--vscode-foreground);
+    padding: 2px 8px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 0.85em;
+    opacity: 0.7;
+}
+.ff-btn:hover { background: var(--vscode-toolbar-hoverBackground, rgba(128,128,128,0.15)); }
+.ff-btn.active {
+    opacity: 1;
+    border-color: var(--vscode-focusBorder, #0078d4);
+    background: var(--vscode-toolbar-activeBackground, rgba(0,120,212,0.15));
+}
+.findings-list { max-height: 320px; overflow-y: auto; }
+.ff-empty { padding: 16px; text-align: center; opacity: 0.6; }
+.ff-card {
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--vscode-panel-border, rgba(128,128,128,0.15));
+    border-left: 3px solid transparent;
+}
+.ff-card:last-child { border-bottom: none; }
+.ff-card.ff-critical { border-left-color: #f85149; }
+.ff-card.ff-warning  { border-left-color: #f0883e; }
+.ff-card.ff-info     { border-left-color: #79c0ff; }
+.ff-head {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 2px;
+    font-size: 0.85em;
+    flex-wrap: wrap;
+}
+.ff-loc {
+    font-family: var(--vscode-editor-font-family, monospace);
+    color: var(--vscode-textLink-foreground);
+}
+.ff-sym {
+    font-family: var(--vscode-editor-font-family, monospace);
+    color: var(--vscode-symbolIcon-functionForeground, #b392f0);
+    background: var(--vscode-textCodeBlock-background, rgba(128,128,128,0.1));
+    padding: 0 4px;
+    border-radius: 2px;
+    font-size: 0.85em;
+}
+.ff-cat {
+    font-size: 0.75em;
+    opacity: 0.7;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+.ff-msg { line-height: 1.4; }
+.ff-fix {
+    margin-top: 4px;
+    padding: 4px 6px;
+    background: var(--vscode-textCodeBlock-background, rgba(128,128,128,0.08));
+    border-radius: 2px;
+    font-size: 0.85em;
+    opacity: 0.9;
+}
+
+/* ── Sprint1/2.8 — Inline Diff Renderer ───────────────────────── */
+.diff-block {
+    font-family: var(--vscode-editor-font-family, ui-monospace, monospace);
+    font-size: 0.82rem;
+    line-height: 1.4;
+    border: 1px solid var(--vscode-panel-border, rgba(128,128,128,0.2));
+    border-radius: 4px;
+    margin-top: 6px;
+    overflow-x: auto;
+    background: var(--vscode-editor-background, transparent);
+}
+.diff-block > div { padding: 0 6px; white-space: pre; }
+.diff-stat {
+    font-family: var(--vscode-font-family);
+    font-size: 0.75rem;
+    opacity: 0.75;
+    margin: 4px 0 2px 0;
+}
+.diff-file-header {
+    font-size: 0.75rem;
+    opacity: 0.6;
+    background: rgba(128,128,128,0.06);
+}
+.diff-hunk-header {
+    color: var(--vscode-textLink-foreground);
+    background: rgba(128,128,128,0.06);
+    font-style: italic;
+}
+.diff-add {
+    background: rgba(46, 160, 67, 0.15);
+    color: var(--vscode-gitDecoration-addedResourceForeground, inherit);
+}
+.diff-del {
+    background: rgba(248, 81, 73, 0.15);
+    color: var(--vscode-gitDecoration-deletedResourceForeground, inherit);
+}
+.diff-ctx { opacity: 0.8; }
+.diff-truncated {
+    text-align: center;
+    font-style: italic;
+    opacity: 0.7;
+    background: rgba(128,128,128,0.06);
+    padding: 4px;
+}
+
+/* modified-files 카드 펼침 영역 (Sprint1/2.8) */
+.modified-file-card {
+    flex-direction: column !important;
+    align-items: stretch !important;
+}
+.modified-file-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+}
+.modified-file-row .path { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.modified-file-diff-area {
+    margin-top: 4px;
+    display: none;
+}
+.modified-file-card.expanded .modified-file-diff-area { display: block; }
+.modified-file-card .toggle-diff::before {
+    content: "▶ ";
+    display: inline-block;
+    transition: transform 0.15s;
+}
+.modified-file-card.expanded .toggle-diff::before {
+    content: "▼ ";
+}
+
+/* ── Sprint1/2.2 — Approval Card ───────────────────────────────── */
+.approval-card {
+    border: 1px solid var(--vscode-focusBorder, var(--vscode-textLink-foreground));
+    border-radius: 6px;
+    padding: 10px 12px;
+    margin: 8px 0;
+    background: var(--vscode-textBlockQuote-background, rgba(128,128,128,0.06));
+}
+.approval-title {
+    font-weight: 600;
+    margin-bottom: 4px;
+    color: var(--vscode-textLink-foreground);
+}
+.approval-summary {
+    margin-bottom: 6px;
+    line-height: 1.4;
+}
+.approval-plan {
+    margin: 4px 0 8px 18px;
+    padding: 0;
+}
+.approval-plan li {
+    margin: 2px 0;
+    line-height: 1.4;
+}
+.approval-files {
+    font-size: 0.8rem;
+    opacity: 0.75;
+    margin-bottom: 8px;
+}
+.approval-actions {
+    display: flex;
+    gap: 6px;
+    margin-top: 4px;
+}
+.approval-actions button {
+    background: var(--vscode-button-background);
+    color: var(--vscode-button-foreground);
+    border: none;
+    padding: 5px 10px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 0.85rem;
+}
+.approval-actions button:hover {
+    background: var(--vscode-button-hoverBackground);
+}
+.approval-actions .btn-reject {
+    background: transparent;
+    color: var(--vscode-foreground);
+    border: 1px solid var(--vscode-panel-border, rgba(128,128,128,0.3));
+}
+.approval-actions .btn-modify {
+    background: var(--vscode-button-secondaryBackground, transparent);
+    color: var(--vscode-button-secondaryForeground, var(--vscode-foreground));
+    border: 1px solid var(--vscode-panel-border, rgba(128,128,128,0.3));
+}
+.approval-card.resolved {
+    opacity: 0.6;
+}
+.approval-card.resolved .approval-actions { display: none; }
+.approval-decision {
+    margin-top: 6px;
+    font-size: 0.8rem;
+    font-style: italic;
+    opacity: 0.8;
+}
+.approval-countdown {
+    font-size: 0.75rem;
+    opacity: 0.65;
+    margin-top: 4px;
+}
+.approval-card.pending {
+    opacity: 0.75;
+}
+.approval-card.pending .approval-actions button {
+    cursor: progress;
+}
+.approval-card .approval-actions button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+.approval-send-error {
+    margin-top: 6px;
+    font-size: 0.8rem;
+    color: var(--vscode-errorForeground, #f48771);
+}
+
+/* ── AskUser — Clarification Card (Approval Card 미러) ──────────────── */
+.clarification-card {
+    border: 1px solid var(--vscode-inputValidation-warningBorder, var(--vscode-focusBorder));
+    border-radius: 6px;
+    padding: 10px 12px;
+    margin: 8px 0;
+    background: var(--vscode-textBlockQuote-background, rgba(128,128,128,0.06));
+}
+.clarification-title {
+    font-weight: 600;
+    margin-bottom: 4px;
+    color: var(--vscode-inputValidation-warningForeground, var(--vscode-textLink-foreground));
+}
+.clarification-question {
+    margin-bottom: 8px;
+    line-height: 1.4;
+}
+.clarification-actions {
+    display: flex;
+    gap: 6px;
+    margin-top: 4px;
+}
+.clarification-actions button {
+    background: var(--vscode-button-background);
+    color: var(--vscode-button-foreground);
+    border: none;
+    padding: 5px 10px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 0.85rem;
+}
+.clarification-actions button:hover {
+    background: var(--vscode-button-hoverBackground);
+}
+.clarification-actions button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+.clarification-card.pending {
+    opacity: 0.75;
+}
+.clarification-card.pending .clarification-actions button {
+    cursor: progress;
+}
+.clarification-card.resolved {
+    opacity: 0.6;
+}
+.clarification-card.resolved .clarification-actions { display: none; }
+.clarification-decision {
+    margin-top: 6px;
+    font-size: 0.8rem;
+    font-style: italic;
+    opacity: 0.8;
+}
+.clarification-countdown {
+    font-size: 0.75rem;
+    opacity: 0.65;
+    margin-top: 4px;
+}
+.clarification-send-error {
+    margin-top: 6px;
+    font-size: 0.8rem;
+    color: var(--vscode-errorForeground, #f48771);
+}
+
+/* ── Sprint2 — 답변 메시지 복사 버튼 ─────────────────────────────── */
+.message.agent {
+    position: relative;
+}
+.msg-copy-btn {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    background: var(--vscode-button-secondaryBackground, transparent);
+    color: var(--vscode-foreground);
+    border: 1px solid var(--vscode-panel-border, rgba(128,128,128,0.3));
+    border-radius: 3px;
+    padding: 2px 7px;
+    font-size: 0.78rem;
+    line-height: 1.2;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.15s, background 0.15s, border-color 0.15s;
+    z-index: 1;
+}
+.message.agent:hover .msg-copy-btn,
+.msg-copy-btn:focus,
+.msg-copy-btn:focus-visible {
+    opacity: 0.85;
+}
+.msg-copy-btn:hover {
+    opacity: 1 !important;
+    background: var(--vscode-button-secondaryHoverBackground, var(--vscode-button-hoverBackground));
+}
+.msg-copy-btn.copied {
+    opacity: 1 !important;
+    background: rgba(46, 160, 67, 0.25);
+    border-color: rgba(46, 160, 67, 0.6);
+}
+.msg-copy-btn.failed {
+    opacity: 1 !important;
+    background: rgba(248, 81, 73, 0.25);
+    border-color: rgba(248, 81, 73, 0.6);
+}
+
+/* ── Sprint2/2.8 Phase 4 — 되돌리기 ─────────────────────────────── */
+.modified-file-card .btn-revert {
+    color: var(--vscode-errorForeground, #f48771);
+    border: 1px solid currentColor;
+    background: transparent;
+}
+.modified-file-card .btn-revert:hover:not(:disabled) {
+    background: rgba(248, 113, 113, 0.12);
+}
+.modified-file-card.reverted {
+    opacity: 0.6;
+    text-decoration: line-through;
+}
+.modified-file-card.reverted .reverted-note {
+    text-decoration: none;
+    margin-top: 4px;
+    font-size: 0.8rem;
+    font-style: italic;
+    color: var(--vscode-errorForeground, #f48771);
+    opacity: 1;
+}
+.modified-file-card.reverted .modified-file-diff-area {
+    opacity: 0.5;
+}

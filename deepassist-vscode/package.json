@@ -1,0 +1,183 @@
+{
+    "name": "g-tas",
+    "displayName": "DeepAssist",
+    "description": "DeepAssist — Claude Agent SDK 기반 AI 코딩 에이전트 (VSCode 클라이언트)",
+    "version": "0.1.0",
+    "publisher": "gtas",
+    "engines": {
+        "vscode": "^1.85.0"
+    },
+    "categories": [
+        "AI",
+        "Programming Languages"
+    ],
+    "activationEvents": [
+        "onStartupFinished"
+    ],
+    "main": "./dist/extension.js",
+    "icon": "media/g-tas-icon.png",
+    "contributes": {
+        "viewsContainers": {
+            "activitybar": [
+                {
+                    "id": "gtas",
+                    "title": "G-TAS",
+                    "icon": "media/g-tas-icon.svg"
+                }
+            ]
+        },
+        "views": {
+            "gtas": [
+                {
+                    "type": "webview",
+                    "id": "gtas.chatView",
+                    "name": "Chat"
+                },
+                {
+                    "type": "webview",
+                    "id": "gtas.settingsView",
+                    "name": "Settings"
+                }
+            ]
+        },
+        "commands": [
+            {
+                "command": "gtas.sendPrompt",
+                "title": "G-TAS: Send Prompt"
+            },
+            {
+                "command": "gtas.stop",
+                "title": "G-TAS: Stop Agent"
+            },
+            {
+                "command": "gtas.switchApp",
+                "title": "G-TAS: Switch App"
+            },
+            {
+                "command": "gtas.configure",
+                "title": "G-TAS: Open VSCode Settings"
+            },
+            {
+                "command": "gtas.openSettingsView",
+                "title": "G-TAS: Open Settings Panel"
+            },
+            {
+                "command": "gtas.showLogs",
+                "title": "G-TAS: Show Logs"
+            },
+            {
+                "command": "gtas.attachToContext",
+                "title": "G-TAS: Add to Context",
+                "category": "G-TAS"
+            },
+            {
+                "command": "gtas.openChatInEditor",
+                "title": "G-TAS: Open Chat in Editor",
+                "category": "G-TAS",
+                "icon": "$(layout-panel-off)"
+            }
+        ],
+        "menus": {
+            "explorer/context": [
+                {
+                    "command": "gtas.attachToContext",
+                    "group": "9_gtas@1"
+                }
+            ],
+            "editor/title/context": [
+                {
+                    "command": "gtas.attachToContext",
+                    "group": "9_gtas@1"
+                }
+            ],
+            "editor/context": [
+                {
+                    "command": "gtas.attachToContext",
+                    "group": "9_gtas@1"
+                }
+            ],
+            "view/title": [
+                {
+                    "command": "gtas.openChatInEditor",
+                    "when": "view == gtas.chatView",
+                    "group": "navigation"
+                }
+            ]
+        },
+        "keybindings": [
+            {
+                "command": "gtas.sendPrompt",
+                "key": "ctrl+shift+g"
+            }
+        ],
+        "configuration": {
+            "title": "G-TAS",
+            "properties": {
+                "gtas.serverUrl": {
+                    "type": "string",
+                    "default": "",
+                    "description": "G-TAS Server WebSocket URL (예: ws://192.168.1.100:8000)"
+                },
+                "gtas.defaultApp": {
+                    "type": "string",
+                    "default": "deep_assist",
+                    "description": "기본 Agent App"
+                },
+                "gtas.llmProvider": {
+                    "type": "string",
+                    "enum": [
+                        "Ollama",
+                        "vLLM",
+                        "OpenAI"
+                    ],
+                    "default": "Ollama"
+                },
+                "gtas.ollamaUrl": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Ollama Base URL. 비워두면 서버 .env(OLLAMA_BASE_URL)에 위임 — 단일 출처 권장."
+                },
+                "gtas.vllmUrl": {
+                    "type": "string",
+                    "default": "",
+                    "description": "vLLM Base URL. 비워두면 서버 .env(VLLM_BASE_URL)에 위임 — 단일 출처 권장."
+                },
+                "gtas.openaiBaseUrl": {
+                    "type": "string",
+                    "default": "https://api.openai.com/v1",
+                    "description": "OpenAI 호환 Base URL"
+                },
+                "gtas.apiKey": {
+                    "type": "string",
+                    "default": "",
+                    "description": "OpenAI API Key"
+                },
+                "gtas.model": {
+                    "type": "string",
+                    "default": ""
+                }
+            }
+        }
+    },
+    "scripts": {
+        "vscode:prepublish": "node esbuild.js --production",
+        "compile": "node esbuild.js",
+        "watch": "node esbuild.js --watch",
+        "check-types": "tsc --noEmit -p ./",
+        "lint": "eslint src --ext ts",
+        "package": "vsce package"
+    },
+    "devDependencies": {
+        "@types/node": "^20.0.0",
+        "@types/vscode": "^1.85.0",
+        "@types/ws": "^8.5.0",
+        "@vscode/vsce": "^2.0.0",
+        "esbuild": "^0.24.2",
+        "typescript": "^5.3.0"
+    },
+    "dependencies": {
+        "dompurify": "^3.4.1",
+        "marked": "^18.0.2",
+        "ws": "^8.16.0"
+    }
+}

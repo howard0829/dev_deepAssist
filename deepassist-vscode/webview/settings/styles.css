@@ -1,0 +1,150 @@
+/*
+ * 설정 webview 스타일.
+ */
+
+body {
+    padding: 12px;
+}
+
+.settings-section {
+    margin-bottom: 16px;
+}
+
+.settings-section h3 {
+    color: var(--vscode-textLink-foreground);
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.settings-row {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 8px;
+}
+
+.settings-row label {
+    font-size: 0.78rem;
+    color: var(--vscode-descriptionForeground);
+}
+
+.settings-row input,
+.settings-row select {
+    background: var(--vscode-input-background);
+    color: var(--vscode-input-foreground);
+    border: 1px solid var(--vscode-input-border, var(--vscode-panel-border));
+    padding: 4px 8px;
+    border-radius: 3px;
+    font-size: 0.85rem;
+    font-family: inherit;
+    outline: none;
+}
+
+.settings-row input:focus,
+.settings-row select:focus {
+    border-color: var(--vscode-focusBorder);
+}
+
+.provider-radios {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 8px;
+}
+
+.provider-pill {
+    flex: 1;
+    background: var(--vscode-editor-background);
+    border: 1px solid var(--vscode-panel-border);
+    color: var(--vscode-foreground);
+    padding: 6px 8px;
+    border-radius: 4px;
+    text-align: center;
+    cursor: pointer;
+    font-size: 0.82rem;
+    transition: all 0.15s;
+}
+
+.provider-pill.active {
+    background: var(--vscode-list-activeSelectionBackground);
+    border-color: var(--vscode-focusBorder);
+    color: var(--vscode-list-activeSelectionForeground);
+}
+
+.provider-pill:hover:not(.active):not(:disabled) {
+    background: var(--vscode-list-hoverBackground);
+}
+
+.provider-pill:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.action-btn {
+    background: var(--vscode-button-background);
+    color: var(--vscode-button-foreground);
+    border: none;
+    padding: 6px 12px;
+    border-radius: 3px;
+    font-size: 0.82rem;
+    cursor: pointer;
+    width: 100%;
+    margin-top: 4px;
+}
+
+.action-btn:hover {
+    background: var(--vscode-button-hoverBackground);
+}
+
+.action-btn.secondary {
+    background: var(--vscode-button-secondaryBackground);
+    color: var(--vscode-button-secondaryForeground);
+}
+
+.action-btn.secondary:hover {
+    background: var(--vscode-button-secondaryHoverBackground);
+}
+
+.row-2 {
+    display: flex;
+    gap: 6px;
+}
+.row-2 > * { flex: 1; }
+
+.test-result {
+    padding: 6px 10px;
+    border-radius: 3px;
+    font-size: 0.78rem;
+    margin-top: 6px;
+    display: none;
+    word-break: break-word;
+    white-space: pre-wrap;
+}
+.test-result.visible { display: block; }
+.test-result.ok {
+    background: var(--vscode-testing-iconPassed, #3fb950);
+    color: var(--vscode-editor-background);
+}
+.test-result.err {
+    background: var(--vscode-inputValidation-errorBackground, #f85149);
+    color: var(--vscode-inputValidation-errorForeground, #ffffff);
+}
+.test-result.pending {
+    background: var(--vscode-textCodeBlock-background);
+    color: var(--vscode-foreground);
+    font-style: italic;
+}
+
+.divider {
+    height: 1px;
+    background: var(--vscode-panel-border);
+    margin: 12px 0;
+}
+
+.note {
+    font-size: 0.72rem;
+    color: var(--vscode-descriptionForeground);
+    margin-top: 4px;
+}

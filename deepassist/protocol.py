@@ -19,10 +19,12 @@ class MessageType:
     APPROVAL_RESPONSE = "approval_response"
     WORKSPACE_METADATA = "workspace_metadata"
     SESSION_RESET = "session_reset"
+    FETCH_VLLM_MODELS = "fetch_vllm_models"   # 설정 패널 — 서버 망에서 vLLM /v1/models 조회
     PING = "ping"
 
     # Server → Client
     SESSION_INIT = "session_init"
+    FETCH_VLLM_MODELS_RESULT = "fetch_vllm_models_result"
     AGENT_TEXT = "agent_text"
     AGENT_COMPLETE = "agent_complete"
     TOOL_REQUEST = "tool_request"            # 워크스페이스 도구 위임

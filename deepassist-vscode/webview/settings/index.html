@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="{{CSP}}">
+    <title>G-TAS Settings</title>
+    <link rel="stylesheet" href="{{THEME_CSS}}">
+    <link rel="stylesheet" href="{{STYLES_CSS}}">
+</head>
+<body>
+    <!-- 서버 URL은 VSCode 설정(gtas.serverUrl) 또는 환경변수 GTAS_SERVER_URL로 관리.
+         UI는 숨김 — 단일 사용자 운용에서 한 번 설정 후 변경할 일이 거의 없음.
+         input 엘리먼트는 main.js 호환을 위해 DOM에는 남기되 비가시화. -->
+    <div class="settings-section" style="display:none">
+        <div class="settings-row">
+            <input type="text" id="server-url" />
+        </div>
+    </div>
+
+    <div class="settings-section">
+        <h3>⚙ LLM 프로바이더</h3>
+        <div class="provider-radios" id="provider-radios"></div>
+
+        <div class="settings-row" id="row-ollama-url" style="display:none">
+            <label for="ollama-url">Ollama URL</label>
+            <input type="text" id="ollama-url" placeholder="http://localhost:11434" />
+        </div>
+
+        <div class="settings-row" id="row-vllm-url" style="display:none">
+            <label for="vllm-url">vLLM URL</label>
+            <input type="text" id="vllm-url" placeholder="http://localhost:8080" />
+        </div>
+
+        <div class="settings-row" id="row-openai-url" style="display:none">
+            <label for="openai-url">OpenAI Base URL</label>
+            <input type="text" id="openai-url" placeholder="https://api.openai.com/v1" />
+        </div>
+
+        <div class="settings-row" id="row-api-key" style="display:none">
+            <label for="api-key">API Key</label>
+            <input type="password" id="api-key" placeholder="sk-..." />
+        </div>
+
+        <div class="settings-row">
+            <label for="model-select">모델</label>
+            <select id="model-select"></select>
+        </div>
+
+        <div class="settings-row" id="row-model-input" style="display:none">
+            <label for="model-input">모델명</label>
+            <input type="text" id="model-input" placeholder="예: gemma3:27b" />
+        </div>
+
+        <button class="action-btn" id="connection-test-btn">🔌 연결 테스트</button>
+        <div class="test-result" id="test-result"></div>
+    </div>
+
+    <script src="{{MAIN_JS}}"></script>
+</body>
+</html>
