@@ -9,3 +9,10 @@ Thumbs.db
 # Environment
 .env
 .env.*
+
+# 템플릿은 추적
+!.env.sample
+
+# Python
+__pycache__/
+*.pyc

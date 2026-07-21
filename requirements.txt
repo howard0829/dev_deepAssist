@@ -1,0 +1,19 @@
+# DeepAssist 서버 의존성
+# 설치:  pip install -r requirements.txt
+#
+# 주: vLLM은 GPU/CUDA 환경 의존성이 커서 여기 포함하지 않는다.
+#     별도 설치:  pip install vllm   (START_VLLM=true 로 start.sh가 구동)
+
+# --- 웹/WS 서버 ---
+fastapi>=0.110
+uvicorn[standard]>=0.29
+websockets>=12.0
+python-dotenv>=1.0
+
+# --- Core agent ---
+# Claude Code를 라이브러리로 감싼 SDK. 내부에 native 바이너리 동봉.
+claude-agent-sdk>=0.1.0
+
+# --- LLM 프록시 ---
+# Anthropic /v1/messages 를 vLLM/OpenAI로 변환. `litellm --config ...` CLI 제공.
+litellm[proxy]>=1.55
