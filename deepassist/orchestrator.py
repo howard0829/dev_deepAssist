@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
 
 from . import config
 from .prompts import DEEPASSIST_TOOL_GUIDE
@@ -36,8 +37,9 @@ class Orchestrator:
         allowed = [f"mcp__deepassist__{t}" for t in config.DELEGATED_TOOLS]
         allowed.append("mcp__knowledge__rag_search")
 
+        model = session.provider_config.get("model") or config.DEEPASSIST_MODEL
         opts = dict(
-            model=session.provider_config.get("model") or config.DEEPASSIST_MODEL,
+            model=model,
             system_prompt={
                 "type": "preset", "preset": "claude_code",
                 "append": DEEPASSIST_TOOL_GUIDE,       # §9.1 도구 지침 보강
@@ -51,10 +53,17 @@ class Orchestrator:
             permission_mode=config.PERMISSION_MODE,
             skills=config.skills_option(),
             include_partial_messages=False,   # MVP: 턴 단위 (§11: 토큰 스트리밍 후속)
+            # 전체 부모 환경(PATH·HOME 등) + Anthropic 오버라이드를 함께 전달.
+            # small/fast 모델도 같은 LiteLLM 모델로 지정하지 않으면 기본 Haiku 호출로 실패.
             env={
+                **os.environ,
                 "ANTHROPIC_BASE_URL": config.ANTHROPIC_BASE_URL,
                 "ANTHROPIC_AUTH_TOKEN": config.ANTHROPIC_AUTH_TOKEN,
                 "ANTHROPIC_API_KEY": config.ANTHROPIC_AUTH_TOKEN,
+                "ANTHROPIC_MODEL": model,
+                "ANTHROPIC_SMALL_FAST_MODEL": config.SMALL_MODEL,
+                # 비필수 트래픽 차단 — 잘 되는 CLI와 동일. 미설정 시 실패/행의 주원인.
+                "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": config.DISABLE_NONESSENTIAL_TRAFFIC,
             },
         )
         if session.workspace:
@@ -71,16 +80,32 @@ class Orchestrator:
             return
 
         session.begin_turn()
+        model = session.provider_config.get("model") or config.DEEPASSIST_MODEL
+        logger.info("query 시작 — model=%s, base_url=%s", model, config.ANTHROPIC_BASE_URL)
+        got_result = False
         try:
             options = self._build_options(session)
             async for msg in query(prompt=prompt, options=options):
+                name = type(msg).__name__
+                logger.debug("SDK 메시지 수신: %s", name)
+                if name == "ResultMessage":
+                    got_result = True
                 await self._translate(session, msg)
         except asyncio.CancelledError:
             await session.send(MT.STATUS_UPDATE, {"message": "중지됨"})
             raise
         except Exception as e:  # noqa: BLE001
             logger.exception("에이전트 실행 오류")
-            await session.send(MT.ERROR, {"code": "agent_error", "message": str(e)})
+            # 예외 타입명을 함께 노출 — LiteLLM 연결·SDK 옵션 오류 등 원인 파악용.
+            await session.send(MT.ERROR, {
+                "code": "agent_error", "message": f"{type(e).__name__}: {e}"})
+            return
+        if not got_result:
+            # ResultMessage 없이 루프 종료 — UI가 멈추지 않게 완료 통지 + 경고 로그.
+            logger.warning("query 종료했으나 ResultMessage 없음 (SDK 메시지 형태 확인 필요, §11)")
+            await session.send(MT.AGENT_COMPLETE, {
+                "response": "", "modified_files": sorted(session.modified_files),
+                "diffs": session.diffs, "metrics": {}})
 
     async def _translate(self, session: Session, msg) -> None:
         """SDK 메시지 → UI 프로토콜 (방어적)."""
@@ -109,3 +134,6 @@ class Orchestrator:
             sid = getattr(msg, "session_id", None)
             if sid:
                 session.sdk_session_id = sid
+
+        else:
+            logger.debug("미처리 SDK 메시지 타입: %s", name)

@@ -21,6 +21,8 @@ logger = logging.getLogger(__name__)
 os.environ.setdefault("ANTHROPIC_BASE_URL", config.ANTHROPIC_BASE_URL)
 os.environ.setdefault("ANTHROPIC_AUTH_TOKEN", config.ANTHROPIC_AUTH_TOKEN)
 os.environ.setdefault("ANTHROPIC_API_KEY", config.ANTHROPIC_AUTH_TOKEN)
+os.environ.setdefault("ANTHROPIC_SMALL_FAST_MODEL", config.SMALL_MODEL)
+os.environ.setdefault("CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC", config.DISABLE_NONESSENTIAL_TRAFFIC)
 
 
 @asynccontextmanager
@@ -61,7 +63,7 @@ async def health():
 def main() -> None:
     import uvicorn
     logging.basicConfig(
-        level=logging.INFO,
+        level=getattr(logging, config.LOG_LEVEL, logging.INFO),
         format="%(asctime)s [%(name)s] %(levelname)s: %(message)s",
     )
     uvicorn.run(app, host=config.DEEPASSIST_HOST, port=config.DEEPASSIST_PORT)

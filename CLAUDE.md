@@ -50,7 +50,10 @@ bash -n start.sh                    # 스크립트 문법 검사
 그대로 가져온 재사용 코드**다. 명령/뷰/설정 ID는 `gtas.*`로 남아 있고(표시 이름만 DeepAssist로
 경량 리브랜딩), 서버와의 계약은 `protocol.py` 필드명·`CLIENT_TOOL_NAME`으로 맞춘다. 확장 내부
 로직을 수정하기 전, 서버 protocol과의 호환을 먼저 확인할 것. `build_client.sh`는 `EXT_DIR`로
-대상 지정, 없으면 형제 리포로 폴백.
+대상 지정, 없으면 형제 리포로 폴백. **확장을 바꾸면 `deepassist-vscode/package.json`의 version을
+올려야** VSCode가 재설치를 업데이트로 인식한다(같은 버전 vsix는 갱신 안 됨). `build_client.sh`가
+빌드마다 patch를 자동 증가시킨다(`NO_BUMP=1`로 생략). 설치 후 webview 캐시 때문에 **Reload
+Window**가 필요할 수 있다.
 
 - **테스트 스위트는 아직 없다.** 위 두 문법 검사가 현재 유일한 정적 확인 수단.
 - **vLLM·LiteLLM은 외부에서 별도 실행**한다. DeepAssist는 `.env`의 `ANTHROPIC_BASE_URL`로 외부

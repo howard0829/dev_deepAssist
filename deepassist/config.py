@@ -29,10 +29,16 @@ VLLM_BASE_URL = os.getenv("VLLM_BASE_URL", "http://localhost:8080").rstrip("/")
 # ── 외부 LiteLLM 연결 (Agent SDK → LiteLLM, Anthropic 포맷) ──
 # vLLM·LiteLLM은 이 리포 밖에서 별도 실행. ANTHROPIC_BASE_URL 로 외부 LiteLLM 에 접속.
 ANTHROPIC_BASE_URL = os.getenv("ANTHROPIC_BASE_URL", "").strip() or "http://127.0.0.1:4000"
-# 외부 LiteLLM이 master_key를 쓰지 않으면 비어있지 않은 아무 토큰이면 된다.
-ANTHROPIC_AUTH_TOKEN = os.getenv("ANTHROPIC_AUTH_TOKEN", "").strip() or "not-needed"
+# 외부 LiteLLM의 인증 토큰. master_key 미사용이면 아무 값이나 가능(잘 되는 CLI는 "dummy" 사용).
+ANTHROPIC_AUTH_TOKEN = os.getenv("ANTHROPIC_AUTH_TOKEN", "").strip() or "dummy"
 # Agent SDK가 요청할 모델명 = 외부 LiteLLM의 model_name 과 반드시 일치해야 한다.
 DEEPASSIST_MODEL = os.getenv("DEEPASSIST_MODEL", "deepassist")
+# Claude Code는 백그라운드 작업에 small/fast 모델을 별도로 호출한다. 로컬 모델 환경에선
+# 이것도 같은 LiteLLM 모델로 지정하지 않으면 기본 Haiku 모델명으로 호출해 실패한다.
+SMALL_MODEL = os.getenv("DEEPASSIST_SMALL_MODEL", "").strip() or DEEPASSIST_MODEL
+# 로컬/오프라인 모델 환경 필수 — 텔레메트리·자동업데이트·비필수 백그라운드 호출을 끈다.
+# 미설정 시 Claude Code가 api.anthropic.com·small모델 등 비필수 요청으로 실패/행. 잘 되는 CLI가 사용.
+DISABLE_NONESSENTIAL_TRAFFIC = os.getenv("CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC", "1")
 
 # ── 에이전트 동작 ──
 PERMISSION_MODE = os.getenv("DEEPASSIST_PERMISSION_MODE", "acceptEdits")
@@ -41,6 +47,8 @@ SKILLS = os.getenv("DEEPASSIST_SKILLS", "all").strip()   # "all" | "a,b" | ""
 TOOL_TIMEOUT = float(os.getenv("DEEPASSIST_TOOL_TIMEOUT", "300"))
 MAX_SESSIONS = int(os.getenv("DEEPASSIST_MAX_SESSIONS", "200"))
 CORS_ORIGINS = [o.strip() for o in os.getenv("DEEPASSIST_CORS_ORIGINS", "*").split(",")]
+# 문제 진단 시 DEBUG로 올리면 SDK 메시지 타입·상세 로그가 노출된다.
+LOG_LEVEL = os.getenv("DEEPASSIST_LOG_LEVEL", "INFO").upper()
 
 # ── 도구 분류 (§5) ──
 # 클라 위임 도구: 모델에는 mcp__deepassist__<name> 으로 노출. 서버 FS 오염을 막기

@@ -72,6 +72,20 @@ echo -e "\n${CYAN}📦 esbuild 번들 (production)${NC}"
 node esbuild.js --production
 echo -e "${GREEN}   ✅ dist/extension.js (의존성 인라인)${NC}"
 
+# ── 리비전 자동 증가 (vsix가 바뀌면 버전 상향 — VSCode가 재설치를 업데이트로 인식) ──
+# NO_BUMP=1 로 건너뛸 수 있음.
+if [ "${NO_BUMP:-0}" != "1" ]; then
+  NEW_VER=$(node -e '
+const fs=require("fs");
+let s=fs.readFileSync("package.json","utf8");let out="";
+s=s.replace(/("version"\s*:\s*")(\d+)\.(\d+)\.(\d+)(")/,(m,a,x,y,z,b)=>{out=x+"."+y+"."+(+z+1);return a+out+b;});
+fs.writeFileSync("package.json",s);process.stdout.write(out);
+')
+  echo -e "${CYAN}   🔖 리비전 상향 → v${NEW_VER}${NC}"
+else
+  echo -e "${YELLOW}   ⏭️  리비전 상향 건너뜀 (NO_BUMP=1)${NC}"
+fi
+
 # ── .vsix 패키징 ──
 echo -e "\n${CYAN}📦 .vsix 패키지 생성${NC}"
 npx @vscode/vsce package --allow-missing-repository 2>&1 | tail -3
