@@ -49,6 +49,9 @@ MAX_SESSIONS = int(os.getenv("DEEPASSIST_MAX_SESSIONS", "200"))
 CORS_ORIGINS = [o.strip() for o in os.getenv("DEEPASSIST_CORS_ORIGINS", "*").split(",")]
 # 문제 진단 시 DEBUG로 올리면 SDK 메시지 타입·상세 로그가 노출된다.
 LOG_LEVEL = os.getenv("DEEPASSIST_LOG_LEVEL", "INFO").upper()
+# Agent SDK 서브프로세스의 작업 디렉토리(서버측). session.workspace(클라 경로)를 쓰면
+# SDK가 'Working directory does not exist'로 실패한다(멀티 OS 불변식). 빈 서버 디렉토리 사용.
+AGENT_CWD = os.path.expanduser(os.getenv("DEEPASSIST_AGENT_CWD", "~/.deepassist/agent"))
 
 # ── 도구 분류 (§5) ──
 # 클라 위임 도구: 모델에는 mcp__deepassist__<name> 으로 노출. 서버 FS 오염을 막기

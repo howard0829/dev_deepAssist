@@ -66,11 +66,41 @@ class Orchestrator:
                 "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": config.DISABLE_NONESSENTIAL_TRAFFIC,
             },
         )
-        if session.workspace:
-            opts["cwd"] = session.workspace          # 명목상(실 실행은 클라 위임)
+        # cwd는 클라이언트(다른 OS) 경로가 아니라 서버의 유효 디렉토리로 지정한다.
+        # session.workspace(예: d:\KDK\...)를 cwd로 쓰면 SDK 서브프로세스가
+        # 'Working directory does not exist'로 실패(멀티 OS 불변식). 실제 파일 접근은
+        # 위임 도구가 클라에서 수행하므로 SDK cwd는 무관. 빈 서버 디렉토리라 프로젝트 오염도 없음.
+        os.makedirs(config.AGENT_CWD, exist_ok=True)
+        opts["cwd"] = config.AGENT_CWD
         if session.sdk_session_id:
             opts["resume"] = session.sdk_session_id  # 멀티턴 연속성
         return ClaudeAgentOptions(**opts)
+
+    def _augment_prompt(self, session: Session, prompt: str) -> str:
+        """UI 첨부 컨텍스트를 프롬프트에 주입.
+
+        - attached_snippets: 선택 코드 본문을 인라인 임베드(파일:라인 헤더 포함).
+        - attached_paths: 클라 절대경로 목록을 제시 — 에이전트가 위임 도구
+          (mcp__deepassist__read/glob/grep)로 직접 열람하도록 유도.
+        """
+        parts: list[str] = []
+
+        snippets = session.attached_snippets or []
+        if snippets:
+            parts.append("## 첨부된 코드")
+            for s in snippets:
+                f = s.get("file", "")
+                a, b = s.get("start_line", ""), s.get("end_line", "")
+                text = s.get("text", "")
+                parts.append(f"### {f} ({a}-{b})\n```\n{text}\n```")
+
+        paths = session.attached_paths or []
+        if paths:
+            parts.append("## 첨부된 파일/폴더 (필요하면 read/glob/grep 도구로 직접 열람)")
+            parts.extend(f"- {p}" for p in paths)
+
+        parts.append(prompt)
+        return "\n\n".join(p for p in parts if p)
 
     async def run(self, session: Session, prompt: str) -> None:
         if not _SDK_OK:
@@ -82,15 +112,16 @@ class Orchestrator:
         session.begin_turn()
         model = session.provider_config.get("model") or config.DEEPASSIST_MODEL
         logger.info("query 시작 — model=%s, base_url=%s", model, config.ANTHROPIC_BASE_URL)
-        got_result = False
+        result_payload = None
+        saw_result = False
         try:
             options = self._build_options(session)
-            async for msg in query(prompt=prompt, options=options):
-                name = type(msg).__name__
-                logger.debug("SDK 메시지 수신: %s", name)
-                if name == "ResultMessage":
-                    got_result = True
-                await self._translate(session, msg)
+            full_prompt = self._augment_prompt(session, prompt)
+            async for msg in query(prompt=full_prompt, options=options):
+                logger.debug("SDK 메시지 수신: %s", type(msg).__name__)
+                rp = await self._translate(session, msg)
+                if rp is not None:                    # ResultMessage payload
+                    result_payload, saw_result = rp, True
         except asyncio.CancelledError:
             await session.send(MT.STATUS_UPDATE, {"message": "중지됨"})
             raise
@@ -100,15 +131,25 @@ class Orchestrator:
             await session.send(MT.ERROR, {
                 "code": "agent_error", "message": f"{type(e).__name__}: {e}"})
             return
-        if not got_result:
-            # ResultMessage 없이 루프 종료 — UI가 멈추지 않게 완료 통지 + 경고 로그.
-            logger.warning("query 종료했으나 ResultMessage 없음 (SDK 메시지 형태 확인 필요, §11)")
-            await session.send(MT.AGENT_COMPLETE, {
-                "response": "", "modified_files": sorted(session.modified_files),
-                "diffs": session.diffs, "metrics": {}})
 
-    async def _translate(self, session: Session, msg) -> None:
-        """SDK 메시지 → UI 프로토콜 (방어적)."""
+        # ★ 완료 통지는 루프가 실제 종료된 뒤 딱 한 번 — 중간/중복 ResultMessage로 인한
+        #    조기 종료 인식(전송버튼 조기 활성화) 방지. 이 시점에만 UI가 turn 종료로 인식.
+        if not saw_result:
+            logger.warning("ResultMessage 없이 종료 (SDK 메시지 형태 확인 필요, §11)")
+        final = result_payload or {}
+        await session.send(MT.AGENT_COMPLETE, {
+            "response": final.get("response", ""),
+            "modified_files": sorted(session.modified_files),
+            "diffs": session.diffs,
+            "metrics": final.get("metrics", {}),
+        })
+
+    async def _translate(self, session: Session, msg):
+        """SDK 메시지 → UI 프로토콜 (방어적).
+
+        ResultMessage면 완료 payload(dict)를 반환한다(여기서 agent_complete를 보내지
+        않는다 — 조기 종료 방지를 위해 run()이 루프 종료 후 1회만 전송). 그 외 None.
+        """
         name = type(msg).__name__
 
         if name == "AssistantMessage":
@@ -117,23 +158,25 @@ class Orchestrator:
                     text = getattr(block, "text", "") or ""
                     if text:
                         await session.send(MT.AGENT_TEXT, {"text": text, "is_final": False})
+            return None
 
-        elif name == "ResultMessage":
+        if name == "ResultMessage":
             sid = getattr(msg, "session_id", None)
             if sid:
                 session.sdk_session_id = sid
             usage = getattr(msg, "usage", None) or {}
-            await session.send(MT.AGENT_COMPLETE, {
+            logger.info("ResultMessage 수신 (subtype=%s, num_turns=%s)",
+                        getattr(msg, "subtype", None), getattr(msg, "num_turns", None))
+            return {
                 "response": getattr(msg, "result", "") or "",
-                "modified_files": sorted(session.modified_files),
-                "diffs": session.diffs,
                 "metrics": {"usage": usage} if usage else {},
-            })
+            }
 
-        elif name == "SystemMessage":
+        if name == "SystemMessage":
             sid = getattr(msg, "session_id", None)
             if sid:
                 session.sdk_session_id = sid
+            return None
 
-        else:
-            logger.debug("미처리 SDK 메시지 타입: %s", name)
+        logger.debug("미처리 SDK 메시지 타입: %s", name)
+        return None

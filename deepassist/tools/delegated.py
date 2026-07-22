@@ -26,6 +26,7 @@ def _text(text: str, is_error: bool = False) -> dict:
 async def _delegate(session: Session, mcp_name: str, args: dict[str, Any]) -> dict:
     """위임 공통 처리 — tool_request 전송 → tool_result 대기 → 부수효과 반영."""
     client_tool = config.CLIENT_TOOL_NAME.get(mcp_name, mcp_name)
+    logger.info("도구 위임 → %s", client_tool)
     await session.send(MT.STATUS_UPDATE, {"activity": "coding", "message": f"{client_tool} 실행"})
 
     try:

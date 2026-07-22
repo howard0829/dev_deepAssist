@@ -15,6 +15,9 @@ class Session:
         self.workspace: str = ""
         self.workspace_meta: dict = {}
         self.provider_config: dict = {}
+        # UI 첨부 컨텍스트 (user_message마다 갱신).
+        self.attached_paths: list[str] = []        # 클라 절대경로 (위임 도구로 열람)
+        self.attached_snippets: list[dict] = []    # {file,start_line,end_line,text}
         # Agent SDK 세션 연속성 (다음 턴 resume). init/result에서 채움.
         self.sdk_session_id: str | None = None
         # 이번 실행에서 위임 도구가 보고한 부수효과.
@@ -27,6 +30,8 @@ class Session:
     def update_from_user_message(self, payload: dict) -> None:
         self.workspace = payload.get("workspace", self.workspace)
         self.provider_config = payload.get("provider_config", self.provider_config)
+        self.attached_paths = payload.get("attached_paths", []) or []
+        self.attached_snippets = payload.get("attached_snippets", []) or []
 
     def begin_turn(self) -> None:
         self.modified_files.clear()
