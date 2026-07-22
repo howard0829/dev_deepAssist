@@ -111,8 +111,8 @@ class Orchestrator:
 
         paths = session.attached_paths or []
         if paths:
-            parts.append("## 첨부된 파일/폴더 (필요하면 read/glob/grep 도구로 직접 열람)")
-            parts.extend(f"- {p}" for p in paths)
+            parts.append("## 첨부된 파일/폴더 (필요하면 read/glob/grep 도구로 직접 열람; 경로는 아래 슬래시 표기 그대로 사용)")
+            parts.extend(f"- {p.replace(chr(92), '/')}" for p in paths)   # 백슬래시 → 슬래시
 
         parts.append(prompt)
         return "\n\n".join(p for p in parts if p)
