@@ -46,19 +46,37 @@ def _call(fn_name: str, **kwargs) -> dict:
 
 
 def build_knowledge_server(session=None):
-    @tool("rag_search", "코드/문서 지식베이스(벡터 DB)를 의미 검색한다.", {"query": str})
+    @tool(
+        "rag_search",
+        "코드/문서 지식베이스(벡터 DB)를 의미 검색한다. 표준·요구사항 ID(예: STD-LOG-24), "
+        "기술 개념, 오류 메시지, 문서 섹션 등을 조회할 때 사용. 결과가 반환되면 그 내용을 "
+        "근거로 답하고, 결과에 있는 항목을 '없다'고 하지 마라.",
+        {"query": str},
+    )
     async def rag_search(args: dict[str, Any]) -> dict:
         return _call("search_knowledge", query=args.get("query", ""), top_k=6)
 
-    @tool("lookup_symbol", "지식 DB에서 심볼(함수/클래스) 정의를 찾는다.", {"symbol": str})
+    @tool(
+        "lookup_symbol",
+        "지식 DB에서 심볼(함수/클래스/구조체) 정의와 위치를 찾는다. 이름을 정확히 알 때 rag_search보다 정밀.",
+        {"symbol": str},
+    )
     async def lookup_symbol(args: dict[str, Any]) -> dict:
         return _call("lookup_symbol", symbol=args.get("symbol", ""))
 
-    @tool("get_file_outline", "지식 DB에서 파일의 심볼 아웃라인을 얻는다.", {"file_path": str})
+    @tool(
+        "get_file_outline",
+        "지식 DB에서 파일의 심볼 아웃라인(함수/클래스 목록)을 얻는다. 파일 전체 구조 파악용.",
+        {"file_path": str},
+    )
     async def get_file_outline(args: dict[str, Any]) -> dict:
         return _call("get_file_outline", file_path=args.get("file_path", ""))
 
-    @tool("get_callgraph", "지식 DB에서 함수 콜그래프를 얻는다.", {"function_name": str})
+    @tool(
+        "get_callgraph",
+        "지식 DB에서 함수의 콜그래프(호출하는/호출받는 함수)를 얻는다. 의존·영향 범위 추적용.",
+        {"function_name": str},
+    )
     async def get_callgraph(args: dict[str, Any]) -> dict:
         return _call("get_callgraph", function_name=args.get("function_name", ""))
 
