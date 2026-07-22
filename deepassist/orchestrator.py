@@ -35,7 +35,15 @@ class Orchestrator:
         from .tools.knowledge import build_knowledge_server
 
         allowed = [f"mcp__deepassist__{t}" for t in config.DELEGATED_TOOLS]
-        allowed.append("mcp__knowledge__rag_search")
+        allowed += [f"mcp__knowledge__{t}" for t in
+                    ("rag_search", "lookup_symbol", "get_file_outline", "get_callgraph")]
+
+        # in-process MCP(위임·knowledge) + .env로 등록한 외부 MCP 병합.
+        mcp_servers = {
+            "deepassist": build_delegated_server(session),
+            "knowledge": build_knowledge_server(session),
+        }
+        mcp_servers.update(config.MCP_SERVERS)   # 외부 MCP (.env DEEPASSIST_MCP_SERVERS)
 
         model = session.provider_config.get("model") or config.DEEPASSIST_MODEL
         # 클라이언트 OS 자동 인식(명시값 → 경로 형식) 후 OS별 지시문 주입 — 모델이 대상 OS를
@@ -61,10 +69,7 @@ class Orchestrator:
             },
             disallowed_tools=list(config.DISABLED_BUILTINS),   # 내장 워크스페이스 도구 제거
             allowed_tools=allowed,                             # 위임/서버직접 사전 승인
-            mcp_servers={
-                "deepassist": build_delegated_server(session),
-                "knowledge": build_knowledge_server(session),
-            },
+            mcp_servers=mcp_servers,
             permission_mode=config.PERMISSION_MODE,
             skills=config.skills_option(),
             include_partial_messages=False,   # MVP: 턴 단위 (§11: 토큰 스트리밍 후속)

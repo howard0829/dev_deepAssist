@@ -6,6 +6,7 @@ start.sh가 .env를 셸 환경으로 로드하지만, 직접 실행(`python -m d
 
 from __future__ import annotations
 
+import json
 import os
 from pathlib import Path
 
@@ -52,6 +53,17 @@ LOG_LEVEL = os.getenv("DEEPASSIST_LOG_LEVEL", "INFO").upper()
 # Agent SDK 서브프로세스의 작업 디렉토리(서버측). session.workspace(클라 경로)를 쓰면
 # SDK가 'Working directory does not exist'로 실패한다(멀티 OS 불변식). 빈 서버 디렉토리 사용.
 AGENT_CWD = os.path.expanduser(os.getenv("DEEPASSIST_AGENT_CWD", "~/.deepassist/agent"))
+
+# 외부 MCP 서버 (.env로 등록). JSON dict:
+#   stdio : {"name": {"command": "python", "args": ["path/to/server.py"]}}
+#   http  : {"name": {"type": "http", "url": "https://..."}}
+# Agent SDK의 mcp_servers 옵션에 그대로 병합된다.
+try:
+    MCP_SERVERS = json.loads(os.getenv("DEEPASSIST_MCP_SERVERS", "").strip() or "{}")
+    if not isinstance(MCP_SERVERS, dict):
+        MCP_SERVERS = {}
+except Exception:  # noqa: BLE001 — 잘못된 JSON이어도 서버는 떠야 함
+    MCP_SERVERS = {}
 
 # ── 도구 분류 (§5) ──
 # 클라 위임 도구: 모델에는 mcp__deepassist__<name> 으로 노출. 서버 FS 오염을 막기

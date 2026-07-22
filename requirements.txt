@@ -18,3 +18,21 @@ claude-agent-sdk>=0.1.0
 opentelemetry-api
 opentelemetry-sdk
 opentelemetry-exporter-otlp
+
+# --- RAG (리포 루트 rag/ — dev_agent_client 재사용, 서버직접) ---
+langchain>=0.2.0,<1.0.0
+langchain-community>=0.2.0,<1.0.0
+langchain-core>=0.3.27,<0.4.0
+langchain-ollama>=0.2.0,<1.0.0
+faiss-cpu>=1.7.4,<2.0.0
+rank_bm25>=0.2.2,<1.0.0
+sentence-transformers>=3.0.0,<4.0.0
+beautifulsoup4>=4.12.0,<5.0.0
+trafilatura>=1.6.0,<2.0.0
+requests>=2.31.0,<3.0.0
+tqdm>=4.66.0,<5.0.0
+tree-sitter>=0.23.0,<1.0.0
+tree-sitter-python>=0.23.0,<1.0.0
+tree-sitter-c>=0.23.0,<1.0.0
+tree-sitter-cpp>=0.23.0,<1.0.0
+tree-sitter-java>=0.23.0,<1.0.0

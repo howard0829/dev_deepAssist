@@ -133,8 +133,17 @@ Claude Agent SDK는 통제된 서버에서 돌고, 그 **내장 도구(Bash/Read
 원칙: 값·계약은 **SSOT 한 곳**(코드 또는 `.env`)에 두고 나머지는 그곳을 참조. 부득이 복제한 값은
 이 표에 등재해 드리프트를 막는다.
 
-## 미완/후속 (§10·§11)
+## RAG · MCP
 
-`tools/knowledge.py`의 RAG는 stub — `../dev_agent_client/g_tas_server/rag` 연결 예정. 토큰
-단위 스트리밍(`include_partial_messages`)·승인 게이트(`canUseTool`→`approval_request`)·멀티턴
+- **RAG(서버직접)**: 리포 루트 **`rag/`**(dev_agent_client 재사용, 자기완결)를 `tools/knowledge.py`가
+  연결. `mcp__knowledge__{rag_search,lookup_symbol,get_file_outline,get_callgraph}`로 노출. 벡터 DB는
+  서버의 `KNOWLEDGE_BASE_DIR`(기본 `~/.deepassist/knowledge`)를 그대로 검색(위임 없이 서버 실행).
+  rag 의존성(langchain·faiss·sentence-transformers·tree-sitter…) 미설치 시 graceful 메시지 반환.
+  `rag/`는 `from rag.X` 절대 import라 **리포 루트에서 실행**(`python -m deepassist.main`)해야 해석됨.
+- **외부 MCP**: `.env`의 **`DEEPASSIST_MCP_SERVERS`**(JSON)를 `orchestrator`가 Agent SDK `mcp_servers`에
+  병합. stdio(`{"n":{"command","args"}}`)·http(`{"n":{"type":"http","url"}}`) 등록 가능.
+
+## 미완/후속 (§11)
+
+토큰 단위 스트리밍(`include_partial_messages`)·승인 게이트(`canUseTool`→`approval_request`)·멀티턴
 `resume`는 골격만 존재. 새 기능 추가 전 설계 문서의 해당 절을 먼저 확인할 것.

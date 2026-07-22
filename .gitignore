@@ -1,5 +1,5 @@
 # Claude Code local settings (personal, machine-specific)
-.claude/settings.local.json
+.claude/settings.local.json*
 
 # OS / editor
 .DS_Store
