@@ -44,6 +44,7 @@ class Orchestrator:
         os_label = {"windows": "Windows", "linux": "Linux", "macos": "macOS"}.get(client_os, "unknown")
         shell = (session.workspace_meta or {}).get("shell", "")
         workspace = session.workspace or "(미지정)"
+        logger.info("클라이언트 OS 인식: %s (shell=%s)", client_os, shell or "-")
         note = f"[현재 세션] 사용자 PC OS: {os_label} · 워크스페이스: {workspace}"
         if client_os == "windows":
             note += (f"\n사용자 PC는 Windows다. 경로는 `C:\\...`/`D:\\...` 형식이며 위임 도구에 그대로 "
