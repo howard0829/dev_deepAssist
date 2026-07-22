@@ -36,10 +36,12 @@ async def _delegate(session: Session, mcp_name: str, args: dict[str, Any]) -> di
             timeout=config.TOOL_TIMEOUT,
         )
     except (TimeoutError, ConnectionError) as e:
+        logger.warning("도구 위임 실패 ← %s: %s", client_tool, e)
         return _text(f"도구 위임 실패: {e}", is_error=True)
 
     output = result.get("output", "") or ""
     success = result.get("success", True)
+    logger.info("도구 완료 ← %s (success=%s)", client_tool, success)
     side = result.get("side_effects") or {}
 
     # 부수효과 누적 + 수정 파일 diff 즉시 발송

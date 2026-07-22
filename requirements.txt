@@ -13,3 +13,8 @@ python-dotenv>=1.0
 # --- Core agent ---
 # Claude Code를 라이브러리로 감싼 SDK. 내부에 native 바이너리 동봉.
 claude-agent-sdk>=0.1.0
+
+# --- 관측/디버그 (DEBUG·telemetry 모드) ---
+opentelemetry-api
+opentelemetry-sdk
+opentelemetry-exporter-otlp
