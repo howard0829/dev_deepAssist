@@ -46,6 +46,10 @@ PERMISSION_MODE = os.getenv("DEEPASSIST_PERMISSION_MODE", "acceptEdits")
 APPROVAL_TOOLS = [t.strip() for t in os.getenv("DEEPASSIST_APPROVAL_TOOLS", "").split(",") if t.strip()]
 SKILLS = os.getenv("DEEPASSIST_SKILLS", "all").strip()   # "all" | "a,b" | ""
 TOOL_TIMEOUT = float(os.getenv("DEEPASSIST_TOOL_TIMEOUT", "300"))
+# heartbeat(클라 25s tool_progress)는 위 deadline을 계속 연장한다. 정상 빌드엔 필요하지만,
+# 행(hang) 걸린 클라 도구가 heartbeat만 계속 보내면 서버가 무한 대기한다 → 절대 상한으로 차단.
+# 이 시간을 넘으면 heartbeat가 와도 강제 타임아웃. 대형 빌드 여유를 위해 기본 30분.
+TOOL_MAX_TIMEOUT = float(os.getenv("DEEPASSIST_TOOL_MAX_TIMEOUT", "1800"))
 MAX_SESSIONS = int(os.getenv("DEEPASSIST_MAX_SESSIONS", "200"))
 CORS_ORIGINS = [o.strip() for o in os.getenv("DEEPASSIST_CORS_ORIGINS", "*").split(",")]
 # 문제 진단 시 DEBUG로 올리면 SDK 메시지 타입·상세 로그가 노출된다.
@@ -64,6 +68,12 @@ try:
         MCP_SERVERS = {}
 except Exception:  # noqa: BLE001 — 잘못된 JSON이어도 서버는 떠야 함
     MCP_SERVERS = {}
+
+# 자동 RAG 선검색+주입 (dev_agent_client _auto_rag_search 대응). 질문마다 지식베이스를
+# 검색해 결과가 있으면 프롬프트에 주입 — 로컬 모델이 rag_search 도구 결과를 스스로 활용
+# 못 하고 "없다"고 답하는 문제를 결정론적으로 해소.
+AUTO_RAG = _bool("DEEPASSIST_AUTO_RAG", True)
+AUTO_RAG_TOP_K = int(os.getenv("DEEPASSIST_AUTO_RAG_TOP_K", "6"))
 
 # ── 도구 분류 (§5) ──
 # 클라 위임 도구: 모델에는 mcp__deepassist__<name> 으로 노출. 서버 FS 오염을 막기

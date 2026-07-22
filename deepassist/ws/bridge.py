@@ -67,17 +67,22 @@ class AsyncBridge:
             await asyncio.wrap_future(cfut)
 
     # ── 요청-응답 (위임) ──
-    async def request(self, msg_type: str, payload: dict, timeout: float = 300.0) -> dict:
+    async def request(self, msg_type: str, payload: dict, timeout: float = 300.0,
+                      max_timeout: float | None = None) -> dict:
         if self._closed:
             raise ConnectionError("WebSocket 연결 종료됨")
 
         req_id = payload.get("id") or uuid.uuid4().hex
         cur = asyncio.get_running_loop()          # 호출자(_delegate) 루프
         fut: asyncio.Future = cur.create_future()
+        now = time.monotonic()
+        # hard_deadline: heartbeat로도 넘을 수 없는 절대 상한. 미지정/상한<기본이면 timeout과 동일.
+        hard = now + (max_timeout if max_timeout and max_timeout > timeout else timeout)
         with self._lock:
             self._pending[req_id] = {
                 "future": fut, "loop": cur,
-                "deadline": time.monotonic() + timeout, "initial": timeout,
+                "deadline": now + timeout, "initial": timeout,
+                "hard_deadline": hard,
             }
         logger.debug("bridge.request id=%s type=%s owner_loop=%s cur_loop=%s",
                      req_id, msg_type, id(self._loop), id(cur))
@@ -88,12 +93,17 @@ class AsyncBridge:
             while True:
                 with self._lock:
                     entry = self._pending.get(req_id)
-                    deadline = entry["deadline"] if entry else 0.0
+                    # heartbeat 연장(deadline)도 절대 상한(hard_deadline)은 못 넘는다.
+                    deadline = min(entry["deadline"], entry["hard_deadline"]) if entry else 0.0
+                    hard = entry["hard_deadline"] if entry else 0.0
                 if entry is None:
                     raise ConnectionError("요청이 정리되었습니다")
                 remaining = deadline - time.monotonic()
                 if remaining <= 0:
-                    raise TimeoutError(f"클라이언트 응답 타임아웃 ({msg_type})")
+                    capped = time.monotonic() >= hard   # heartbeat가 와도 못 넘은 절대 상한 초과
+                    raise TimeoutError(
+                        f"클라이언트 응답 타임아웃 ({msg_type}"
+                        f"{', 절대 상한 초과' if capped else ''})")
                 try:
                     return await asyncio.wait_for(
                         asyncio.shield(fut), timeout=min(remaining, _CHUNK_SECONDS))
@@ -108,7 +118,9 @@ class AsyncBridge:
         with self._lock:
             entry = self._pending.get(req_id)
         if entry is None:
-            logger.warning("bridge.resolve: 대기 없음 id=%s (id 불일치/이미 완료)", req_id)
+            # 타임아웃/취소로 이미 정리된 요청에 뒤늦게 도착한 결과 — 무시해도 안전(uuid라
+            # 다른 요청과 오배정 불가). 진짜 id 불일치 버그도 여기 걸리므로 로그는 남긴다.
+            logger.info("bridge.resolve: 대기 없음 id=%s (타임아웃 후 지각 결과 또는 id 불일치)", req_id)
             return False
         fut = entry["future"]
         if fut.done():
@@ -123,7 +135,8 @@ class AsyncBridge:
             entry = self._pending.get(req_id)
             if entry is None:
                 return False
-            entry["deadline"] = time.monotonic() + entry["initial"]
+            # 연장하되 절대 상한(hard_deadline) 초과는 클램프 — 행 걸린 도구의 무한 연장 차단.
+            entry["deadline"] = min(time.monotonic() + entry["initial"], entry["hard_deadline"])
         return True
 
     def close(self) -> None:

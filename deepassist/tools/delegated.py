@@ -51,6 +51,7 @@ async def _delegate(session: Session, mcp_name: str, args: dict[str, Any]) -> di
             MT.TOOL_REQUEST,
             {"tool_name": client_tool, "arguments": args},
             timeout=config.TOOL_TIMEOUT,
+            max_timeout=config.TOOL_MAX_TIMEOUT,   # heartbeat 무한 연장 방어(절대 상한)
         )
     except (TimeoutError, ConnectionError) as e:
         logger.warning("도구 위임 실패 ← %s: %s", client_tool, e)
@@ -63,6 +64,13 @@ async def _delegate(session: Session, mcp_name: str, args: dict[str, Any]) -> di
     if mcp_name == "glob" and "\\" in output:
         output = output.replace("\\", "/")
     logger.info("도구 완료 ← %s (success=%s)", client_tool, success)
+    # 실패 시 원인 진단용 — 클라 tool-executor가 돌려준 에러 본문을 서버 로그에 노출.
+    # (평시엔 success/실패 플래그만 남아 "폴더 리뷰 Read 실패" 같은 근본 원인을 못 봤다.)
+    if not success:
+        logger.warning("도구 실패 상세 ← %s %s: %s",
+                       client_tool,
+                       {k: args[k] for k in ("file_path", "path", "pattern") if k in args},
+                       output[:500] or "(빈 응답)")
     side = result.get("side_effects") or {}
 
     # 부수효과 누적 + 수정 파일 diff 즉시 발송

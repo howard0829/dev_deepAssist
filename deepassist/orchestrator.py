@@ -139,11 +139,29 @@ class Orchestrator:
         try:
             options = self._build_options(session)
             full_prompt = self._augment_prompt(session, prompt)
-            async for msg in query(prompt=full_prompt, options=options):
-                logger.debug("SDK 메시지 수신: %s", type(msg).__name__)
-                rp = await self._translate(session, msg)
-                if rp is not None:                    # ResultMessage payload
-                    result_payload, saw_result = rp, True
+            # query()는 async generator. 아래 finally에서 aclose()로 명시적으로 닫아
+            # SDK 서브프로세스를 확실히 종료한다(미종료 시 keepalive tool_progress 누수).
+            agen = query(prompt=full_prompt, options=options)
+            try:
+                async for msg in agen:
+                    logger.debug("SDK 메시지 수신: %s", type(msg).__name__)
+                    rp = await self._translate(session, msg)
+                    if rp is not None:                    # ResultMessage payload
+                        result_payload, saw_result = rp, True
+                        # ⚠(§11) 일부 SDK/CLI 버전 + 로컬 모델(외부 LiteLLM) 경로에서
+                        # query()가 종료형(success) ResultMessage 후에도 제너레이터를
+                        # 스스로 끝내지 않고 도구 호출을 계속하는 회귀가 관측됐다. 그 경우
+                        # 루프가 안 끝나 agent_complete가 안 나가고 UI가 멈춘다(무한
+                        # tool_progress). ResultMessage는 턴의 최종 메시지라는 SDK 계약에
+                        # 따라 여기서 능동적으로 루프를 끊는다(제너레이터는 finally에서 닫음).
+                        break
+            finally:
+                aclose = getattr(agen, "aclose", None)
+                if aclose is not None:
+                    try:
+                        await aclose()
+                    except Exception:  # noqa: BLE001 — 종료 정리는 best-effort
+                        pass
         except asyncio.CancelledError:
             await session.send(MT.STATUS_UPDATE, {"message": "중지됨"})
             raise
@@ -154,8 +172,8 @@ class Orchestrator:
                 "code": "agent_error", "message": f"{type(e).__name__}: {e}"})
             return
 
-        # ★ 완료 통지는 루프가 실제 종료된 뒤 딱 한 번 — 중간/중복 ResultMessage로 인한
-        #    조기 종료 인식(전송버튼 조기 활성화) 방지. 이 시점에만 UI가 turn 종료로 인식.
+        # ★ 완료 통지는 루프 종료 후(종료형 ResultMessage에서 break, 또는 제너레이터 자연
+        #    종료) 딱 한 번. 이 시점에만 UI가 turn 종료로 인식(전송버튼 재활성화).
         if not saw_result:
             logger.warning("ResultMessage 없이 종료 (SDK 메시지 형태 확인 필요, §11)")
         final = result_payload or {}
