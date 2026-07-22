@@ -13,6 +13,7 @@ class Session:
     def __init__(self, bridge: AsyncBridge):
         self.bridge = bridge
         self.workspace: str = ""
+        self.os: str = ""                          # 클라이언트 OS (user_message.os)
         self.workspace_meta: dict = {}
         self.provider_config: dict = {}
         # UI 첨부 컨텍스트 (user_message마다 갱신).
@@ -29,6 +30,7 @@ class Session:
 
     def update_from_user_message(self, payload: dict) -> None:
         self.workspace = payload.get("workspace", self.workspace)
+        self.os = payload.get("os", self.os)
         self.provider_config = payload.get("provider_config", self.provider_config)
         self.attached_paths = payload.get("attached_paths", []) or []
         self.attached_snippets = payload.get("attached_snippets", []) or []

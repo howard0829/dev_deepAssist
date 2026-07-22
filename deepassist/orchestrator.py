@@ -38,11 +38,17 @@ class Orchestrator:
         allowed.append("mcp__knowledge__rag_search")
 
         model = session.provider_config.get("model") or config.DEEPASSIST_MODEL
+        # 클라이언트 OS를 프롬프트에 주입 — 모델이 대상 OS(예: Windows)를 명확히 인지하고
+        # 서버(Linux) OS 기준으로 파일 접근을 거부하지 않게 한다.
+        client_os = (session.workspace_meta or {}).get("client_os") or session.os or "unknown"
+        workspace = session.workspace or "(미지정)"
+        guide = (f"{DEEPASSIST_TOOL_GUIDE}\n\n"
+                 f"[현재 세션] 사용자 PC OS: {client_os} · 워크스페이스: {workspace}")
         opts = dict(
             model=model,
             system_prompt={
                 "type": "preset", "preset": "claude_code",
-                "append": DEEPASSIST_TOOL_GUIDE,       # §9.1 도구 지침 보강
+                "append": guide,       # §9.1 도구 지침 + 클라 OS 컨텍스트
             },
             disallowed_tools=list(config.DISABLED_BUILTINS),   # 내장 워크스페이스 도구 제거
             allowed_tools=allowed,                             # 위임/서버직접 사전 승인
