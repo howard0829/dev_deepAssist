@@ -57,6 +57,10 @@ async def _delegate(session: Session, mcp_name: str, args: dict[str, Any]) -> di
 
     output = result.get("output", "") or ""
     success = result.get("success", True)
+    # glob 결과 경로는 Windows에서 백슬래시(path.join native)로 온다 → 모델이 그대로 read에
+    # 넘기면 JSON 이스케이프 손상 재발. glob 출력은 순수 경로 목록이므로 슬래시로 정규화.
+    if mcp_name == "glob" and "\\" in output:
+        output = output.replace("\\", "/")
     logger.info("도구 완료 ← %s (success=%s)", client_tool, success)
     side = result.get("side_effects") or {}
 

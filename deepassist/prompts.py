@@ -31,6 +31,13 @@ DEEPASSIST_TOOL_GUIDE = r"""
 - mcp__deepassist__edit   : 문자열 치환 (file_path, old_string, new_string — 먼저 read로 확인)
 - mcp__deepassist__bash   : 사용자 PC의 native 셸에서 명령 실행
 
+[폴더/프로젝트 리뷰 방법]
+첨부가 폴더면 폴더 자체를 read하지 마라(폴더는 읽을 수 없다). 반드시 다음 순서로 하라:
+1) mcp__deepassist__glob(pattern="**/*", path="<폴더 경로>") 로 폴더 안의 파일 목록을 얻는다.
+2) 목록의 각 파일을 mcp__deepassist__read(file_path="<파일 경로>")로 열어 내용을 리뷰한다.
+3) 특정 심볼/문자열은 mcp__deepassist__grep(pattern=..., path="<폴더 경로>")로 찾는다.
+glob 결과의 파일 경로를 그대로(슬래시로) read에 넘겨라. 파일이 많으면 glob의 limit 인자를 키워라.
+
 파일 열람·탐색은 read/glob/grep을 우선 사용하라. bash는 사용자 PC의 native 셸(Windows면 그에
 맞는 셸)에서 돌므로 OS 종속 명령에 주의하고 가능하면 read/glob/grep으로 대체하라.
 지식/문서 검색은 mcp__knowledge__* 를 사용하라.
