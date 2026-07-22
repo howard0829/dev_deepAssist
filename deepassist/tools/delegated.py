@@ -43,8 +43,9 @@ async def _delegate(session: Session, mcp_name: str, args: dict[str, Any]) -> di
     client_tool = config.CLIENT_TOOL_NAME.get(mcp_name, mcp_name)
     args = _normalize_path_args(args)      # 백슬래시 경로 → 슬래시 (Windows 방어)
     logger.info("도구 위임 → %s %s", client_tool, {k: args[k] for k in ("file_path", "path") if k in args})
-    await session.send(MT.STATUS_UPDATE, {"activity": "coding", "message": f"{client_tool} 실행"})
-
+    # 도구별 "{tool} 실행" status_update는 보내지 않는다 — 확장이 이 메시지를 Output 채널에
+    # 매번 logger.log 하고 채팅에도 라인으로 렌더해 중복 출력됐다. 도구 호출 기록은
+    # 아래 tool_call_update가 이미 담당한다.
     try:
         result = await session.bridge.request(
             MT.TOOL_REQUEST,
