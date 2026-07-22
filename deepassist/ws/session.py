@@ -6,7 +6,12 @@ session_id), 그리고 이번 턴의 수정 파일/diff 누적을 보관한다.
 
 from __future__ import annotations
 
+import re
+
 from .bridge import AsyncBridge
+
+# Windows 드라이브레터 경로 (C:\ , D:/ 등)
+_WIN_DRIVE = re.compile(r"^[A-Za-z]:[\\/]")
 
 
 class Session:
@@ -34,6 +39,33 @@ class Session:
         self.provider_config = payload.get("provider_config", self.provider_config)
         self.attached_paths = payload.get("attached_paths", []) or []
         self.attached_snippets = payload.get("attached_snippets", []) or []
+
+    def client_os(self) -> str:
+        """클라이언트 OS 자동 인식: 명시값(client_os/os) → 경로 형식 추론.
+
+        Returns: "windows" | "linux" | "macos" | "unknown"
+        """
+        explicit = (self.workspace_meta or {}).get("client_os") or self.os
+        if explicit:
+            s = explicit.lower()
+            if "win" in s:
+                return "windows"
+            if "mac" in s or "darwin" in s:
+                return "macos"
+            if "linux" in s or "nix" in s:
+                return "linux"
+
+        # 명시값이 없으면 경로 형식으로 추론 (워크스페이스 + 첨부 경로).
+        for p in [self.workspace, *(self.attached_paths or [])]:
+            if not p:
+                continue
+            if _WIN_DRIVE.match(p) or p.startswith("\\\\"):   # 드라이브레터 / UNC
+                return "windows"
+            if p.startswith("/"):                              # POSIX 절대경로
+                return "linux"
+            if "\\" in p and "/" not in p:                     # 백슬래시만 → Windows
+                return "windows"
+        return "unknown"
 
     def begin_turn(self) -> None:
         self.modified_files.clear()

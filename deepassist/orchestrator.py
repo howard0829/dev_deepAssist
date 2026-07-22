@@ -38,12 +38,20 @@ class Orchestrator:
         allowed.append("mcp__knowledge__rag_search")
 
         model = session.provider_config.get("model") or config.DEEPASSIST_MODEL
-        # 클라이언트 OS를 프롬프트에 주입 — 모델이 대상 OS(예: Windows)를 명확히 인지하고
-        # 서버(Linux) OS 기준으로 파일 접근을 거부하지 않게 한다.
-        client_os = (session.workspace_meta or {}).get("client_os") or session.os or "unknown"
+        # 클라이언트 OS 자동 인식(명시값 → 경로 형식) 후 OS별 지시문 주입 — 모델이 대상 OS를
+        # 명확히 인지해 서버(Linux) 기준으로 파일 접근을 거부하지 않게 한다. Windows/Linux 자동 대응.
+        client_os = session.client_os()
+        os_label = {"windows": "Windows", "linux": "Linux", "macos": "macOS"}.get(client_os, "unknown")
+        shell = (session.workspace_meta or {}).get("shell", "")
         workspace = session.workspace or "(미지정)"
-        guide = (f"{DEEPASSIST_TOOL_GUIDE}\n\n"
-                 f"[현재 세션] 사용자 PC OS: {client_os} · 워크스페이스: {workspace}")
+        note = f"[현재 세션] 사용자 PC OS: {os_label} · 워크스페이스: {workspace}"
+        if client_os == "windows":
+            note += (f"\n사용자 PC는 Windows다. 경로는 `C:\\...`/`D:\\...` 형식이며 위임 도구에 그대로 "
+                     f"넘겨 접근하라. bash는 Windows 셸({shell or 'cmd/powershell'})에서 실행되니 OS 종속 "
+                     f"명령을 피하고 파일 열람·탐색은 read/glob/grep을 우선 사용하라.")
+        elif client_os in ("linux", "macos"):
+            note += "\n사용자 PC는 POSIX(경로 `/...`)다. 위임 도구로 접근하라."
+        guide = f"{DEEPASSIST_TOOL_GUIDE}\n\n{note}"
         opts = dict(
             model=model,
             system_prompt={
